@@ -1,10 +1,9 @@
-y l#!/bin/sh
+#!/bin/sh
 set -e
 
-# Migraciones: se ejecutan en cada arranque (son idempotentes con IF NOT EXISTS).
+# Migración única: deja el esquema al día (tablas + columnas). Idempotente.
 echo "Ejecutando migraciones..."
-python /app/scripts/run_add_area_color.py
-python /app/scripts/run_add_project_icon.py
+python /app/scripts/run_migrate_all.py
 echo "Migraciones listas."
 
 exec "$@"
