@@ -139,8 +139,9 @@ Tablas: `areas`, `projects`. Modelos en `backend/app/models.py`. Todos los endpo
 | PATCH  | `/areas/{id}` | Actualizar área             |
 | DELETE | `/areas/{id}` | Eliminar área (y proyectos) |
 
-- **POST body:** `{ "name": "string", "description": "string | null" }`
-- **PATCH body:** `{ "name": "string | null", "description": "string | null" }`
+- **POST body:** `{ "name": "string", "description": "string | null", "color": "string | null" }` — `color` es opcional, hex `#rrggbb` (paleta del área).
+- **PATCH body:** `{ "name": "string | null", "description": "string | null", "color": "string | null" }`
+- **Respuesta área:** incluye `id`, `user_id`, `name`, `description`, `color`, `created_at`, `updated_at`.
 
 ### Proyectos
 

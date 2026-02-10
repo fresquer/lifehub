@@ -24,6 +24,32 @@
                 placeholder="Descripción (opcional)"
                 rows="2"
               />
+              <div class="color-picker-wrap">
+                <span class="color-label">Color</span>
+                <div class="color-palette" role="group" aria-label="Elegir color del área">
+                  <button
+                    v-for="c in AREA_PALETTE"
+                    :key="c"
+                    type="button"
+                    class="color-swatch"
+                    :class="{ selected: newColor === c }"
+                    :style="{ background: c }"
+                    :title="c"
+                    :aria-pressed="newColor === c"
+                    @click="newColor = newColor === c ? null : c"
+                  />
+                  <button
+                    v-if="newColor !== null"
+                    type="button"
+                    class="color-swatch color-swatch-none"
+                    title="Sin color (acento por defecto)"
+                    aria-label="Quitar color"
+                    @click="newColor = null"
+                  >
+                    —
+                  </button>
+                </div>
+              </div>
               <button type="submit" class="btn btn-primary" :disabled="saving">
                 {{ saving ? 'Guardando…' : 'Crear área' }}
               </button>
@@ -78,6 +104,32 @@
                     placeholder="Descripción"
                     rows="2"
                   />
+                  <div class="color-picker-wrap">
+                    <span class="color-label">Color</span>
+                    <div class="color-palette" role="group" aria-label="Elegir color del área">
+                      <button
+                        v-for="c in AREA_PALETTE"
+                        :key="c"
+                        type="button"
+                        class="color-swatch"
+                        :class="{ selected: editColor === c }"
+                        :style="{ background: c }"
+                        :title="c"
+                        :aria-pressed="editColor === c"
+                        @click="editColor = editColor === c ? null : c"
+                      />
+                      <button
+                        v-if="editColor !== null"
+                        type="button"
+                        class="color-swatch color-swatch-none"
+                        title="Sin color (acento por defecto)"
+                        aria-label="Quitar color"
+                        @click="editColor = null"
+                      >
+                        —
+                      </button>
+                    </div>
+                  </div>
                   <div class="edit-actions">
                     <button type="button" class="btn btn-sm" @click="cancelEdit">Cancelar</button>
                     <button type="button" class="btn btn-sm btn-primary" :disabled="saving" @click="saveEdit(area)">
@@ -86,6 +138,12 @@
                   </div>
                 </div>
                 <template v-else>
+                  <div
+                    v-if="area.color"
+                    class="area-row-color-dot"
+                    :style="{ background: area.color }"
+                    :title="'Color: ' + area.color"
+                  />
                   <div class="area-row-info">
                     <span class="area-name">{{ area.name }}</span>
                     <span v-if="area.description" class="area-desc">{{ area.description }}</span>
@@ -146,6 +204,12 @@ import { useApi } from '../composables/useApi'
 
 const STORAGE_KEY = 'lifehub_area_order'
 
+/** 16 colores diferenciados y agradables para las áreas (hex). */
+const AREA_PALETTE = [
+  '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6',
+  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e', '#64748b', '#94a3b8',
+]
+
 const { fetchUser } = useAuth()
 const { get, post, patch, delete: apiDelete } = useApi()
 
@@ -155,9 +219,11 @@ const areas = ref([])
 const saving = ref(false)
 const newName = ref('')
 const newDescription = ref('')
+const newColor = ref(null)
 const editingId = ref(null)
 const editName = ref('')
 const editDescription = ref('')
+const editColor = ref(null)
 const editNameRef = ref(null)
 const areaToDelete = ref(null)
 
@@ -231,6 +297,7 @@ async function createArea() {
     const created = await post('areas', {
       name: newName.value.trim(),
       description: newDescription.value.trim() || null,
+      color: newColor.value || null,
     })
     areas.value = [...areas.value, created]
     const order = getStoredOrder()
@@ -239,6 +306,7 @@ async function createArea() {
     }
     newName.value = ''
     newDescription.value = ''
+    newColor.value = null
   } catch (e) {
     loadError.value = e.message || 'Error al crear área'
   } finally {
@@ -250,6 +318,7 @@ function startEdit(area) {
   editingId.value = area.id
   editName.value = area.name
   editDescription.value = area.description || ''
+  editColor.value = area.color ?? null
   nextTick(() => editNameRef.value?.focus())
 }
 
@@ -263,6 +332,7 @@ async function saveEdit(area) {
     const updated = await patch(`areas/${area.id}`, {
       name: editName.value.trim(),
       description: editDescription.value.trim() || null,
+      color: editColor.value || null,
     })
     const i = areas.value.findIndex((a) => a.id === area.id)
     if (i >= 0) areas.value[i] = updated
@@ -335,6 +405,35 @@ onMounted(async () => {
 .card-title { font-size: 1rem; font-weight: 600; color: #e2e8f0; margin: 0 0 0.75rem 0; }
 
 .add-form { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.color-picker-wrap { display: flex; flex-direction: column; gap: 0.35rem; }
+.color-label { font-size: 0.85rem; font-weight: 500; color: #94a3b8; }
+.color-palette { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 0.5rem;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.color-swatch:hover { transform: scale(1.1); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); }
+.color-swatch.selected { border-color: #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3); }
+.color-swatch-none {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.area-row-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
 .input, .textarea {
   width: 100%;
   padding: 0.6rem 0.75rem;

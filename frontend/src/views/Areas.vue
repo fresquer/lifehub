@@ -12,10 +12,13 @@
             v-for="area in orderedAreas"
             :key="area.id"
             class="area-section"
+            :style="areaSectionStyle(area)"
           >
             <div class="area-header">
-              <h2 class="area-title">{{ area.name }}</h2>
-              <p v-if="area.description" class="area-desc">{{ area.description }}</p>
+              <div class="area-header-text">
+                <h2 class="area-title">{{ area.name }}</h2>
+                <p v-if="area.description" class="area-desc">{{ area.description }}</p>
+              </div>
               <button
                 type="button"
                 class="btn-add-project"
@@ -44,8 +47,9 @@
                     class="project-name-input"
                     placeholder="Título del proyecto"
                     @click.stop
+                    @keydown.space.stop
                     @blur="saveProjectTitle(project)"
-                    @keydown.enter="saveProjectTitle(project)"
+                    @keydown.enter.stop="saveProjectTitle(project)"
                   />
                 </template>
                 <template v-else>
@@ -184,6 +188,17 @@ const emojiPickerOpen = ref(false)
 const emojiPickerWrapRef = ref(null)
 
 const AREA_ORDER_KEY = 'lifehub_area_order'
+
+/** Acento por defecto cuando el área no tiene color. */
+const DEFAULT_AREA_ACCENT = '#64748b'
+
+function areaSectionStyle(area) {
+  const color = area.color || DEFAULT_AREA_ACCENT
+  return {
+    '--area-accent': color,
+    borderLeftColor: color,
+  }
+}
 
 function getStoredAreaOrder() {
   try {
@@ -359,7 +374,7 @@ onUnmounted(() => {
   flex: 1;
   padding: 1.5rem 1.25rem;
   overflow-y: auto;
-  max-width: 960px;
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
 }
@@ -392,6 +407,7 @@ onUnmounted(() => {
 .area-section {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 8px solid var(--area-accent, var(--default-accent, #64748b));
   border-radius: 1rem;
   padding: 1.25rem;
 }
@@ -399,26 +415,32 @@ onUnmounted(() => {
 .area-header {
   margin-bottom: 1rem;
   display: flex;
-  flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.area-header-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .btn-add-project {
+  margin-left: auto;
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--area-accent, #3b82f6);
+  background: color-mix(in srgb, var(--area-accent, #3b82f6) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--area-accent, #3b82f6) 35%, transparent);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
 
 .btn-add-project:hover:not(:disabled) {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.5);
+  background: color-mix(in srgb, var(--area-accent, #3b82f6) 25%, transparent);
+  border-color: color-mix(in srgb, var(--area-accent, #3b82f6) 50%, transparent);
 }
 
 .btn-add-project:disabled {
@@ -440,31 +462,26 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-/* Fila de tarjetas de proyectos (scroll horizontal) */
+/* Grid de tarjetas de proyectos: 3 columnas que crece */
 .projects-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
-  scroll-snap-type: x proximity;
 }
 
-.projects-row::-webkit-scrollbar {
-  height: 6px;
+@media (max-width: 640px) {
+  .projects-row {
+    grid-template-columns: 1fr;
+  }
 }
 
-.projects-row::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 3px;
-}
-
-.projects-row::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
+@media (min-width: 641px) and (max-width: 900px) {
+  .projects-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .project-card {
-  flex: 0 0 220px;
   min-height: 100px;
   padding: 1rem;
   display: flex;
@@ -474,7 +491,6 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.75rem;
-  scroll-snap-align: start;
   transition: border-color 0.2s, background 0.2s;
 }
 
@@ -537,7 +553,7 @@ onUnmounted(() => {
 }
 
 .no-projects {
-  flex: 0 0 auto;
+  grid-column: 1 / -1;
   padding: 1rem 1.5rem;
   color: #64748b;
   font-size: 0.9rem;

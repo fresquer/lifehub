@@ -1,0 +1,20 @@
+---
+description: Al tocar frontend, revisar si el backend necesita cambios (columnas, tablas, endpoints)
+globs: frontend/**/*
+alwaysApply: false
+---
+
+# Frontend ↔ Backend: mantener sincronía
+
+Siempre que hagas cambios en el **frontend** (vistas, formularios, listados, nuevos campos en UI), **revisa si el backend debe actualizarse**:
+
+1. **Campos nuevos en formularios o listas**  
+   ¿Ese dato existe en el modelo y en la API? Si no: añadir columna en BD, campo en modelo (backend), schema y endpoint correspondiente.
+
+2. **Nuevas entidades o pantallas**  
+   ¿Hay tabla, modelo, router y endpoints para esa entidad? Si no: crear migración/tabla, modelo, schemas y router en backend.
+
+3. **Cambios de tipo o validación**  
+   ¿El backend valida y persiste igual que lo que muestra/envía el front? Ajustar schemas, modelos o constraints si hace falta.
+
+**Resumen:** Tras tocar frontend, preguntar: _¿esto ya está soportado en backend (modelo, API, BD)?_ Si no, implementar o ajustar backend antes de dar por cerrado el cambio.

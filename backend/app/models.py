@@ -25,6 +25,7 @@ class Area(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     description = Column(String(1000), nullable=True)
+    color = Column(String(7), nullable=True)  # hex #rrggbb para la paleta del área
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

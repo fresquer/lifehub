@@ -14,29 +14,49 @@
           @click="dropdownOpen = !dropdownOpen"
         >
           <span class="user-avatar">{{ userInitial }}</span>
-          <span class="user-email">{{ user?.email || '…' }}</span>
-          <span class="dropdown-chevron" :class="{ open: dropdownOpen }">▾</span>
+          <span class="user-email">{{ user?.email || "…" }}</span>
+          <span class="dropdown-chevron" :class="{ open: dropdownOpen }"
+            >▾</span
+          >
         </button>
         <Transition name="dropdown">
           <div v-if="dropdownOpen" class="dropdown-menu" role="menu">
             <div class="dropdown-header">
-              <span class="dropdown-name">{{ user?.full_name || 'Usuario' }}</span>
+              <span class="dropdown-name">{{
+                user?.full_name || "Usuario"
+              }}</span>
               <span class="dropdown-email">{{ user?.email }}</span>
             </div>
             <div class="dropdown-divider" />
-            <router-link to="/dashboard" class="dropdown-item" @click="dropdownOpen = false">
+            <router-link
+              to="/dashboard"
+              class="dropdown-item"
+              @click="dropdownOpen = false"
+            >
               <span class="dropdown-icon">📂</span>
               Áreas y proyectos
             </router-link>
-            <router-link to="/dashboard/usuario" class="dropdown-item" @click="dropdownOpen = false">
+            <router-link
+              to="/dashboard/usuario"
+              class="dropdown-item"
+              @click="dropdownOpen = false"
+            >
               <span class="dropdown-icon">ℹ️</span>
               Info
             </router-link>
-            <router-link to="/dashboard/usuario/configuracion" class="dropdown-item" @click="dropdownOpen = false">
+            <router-link
+              to="/dashboard/usuario/configuracion"
+              class="dropdown-item"
+              @click="dropdownOpen = false"
+            >
               <span class="dropdown-icon">⚙️</span>
               Configuración
             </router-link>
-            <router-link to="/dashboard/configuracion-areas" class="dropdown-item" @click="dropdownOpen = false">
+            <router-link
+              to="/dashboard/configuracion-areas"
+              class="dropdown-item"
+              @click="dropdownOpen = false"
+            >
               <span class="dropdown-icon">📋</span>
               Configuración áreas
             </router-link>
@@ -56,44 +76,44 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuth } from '../composables/useAuth'
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
 
-const route = useRoute()
-const router = useRouter()
-const { user, fetchUser, logout: doLogout } = useAuth()
-const dropdownOpen = ref(false)
-const dropdownWrapRef = ref(null)
+const route = useRoute();
+const router = useRouter();
+const { user, fetchUser, logout: doLogout } = useAuth();
+const dropdownOpen = ref(false);
+const dropdownWrapRef = ref(null);
 
-const pageTitle = computed(() => route.meta.pageTitle || 'Áreas y proyectos')
+const pageTitle = computed(() => route.meta.pageTitle || "Áreas y proyectos");
 
 const userInitial = computed(() => {
-  const u = user.value
-  if (u?.full_name) return u.full_name.charAt(0).toUpperCase()
-  if (u?.email) return u.email.charAt(0).toUpperCase()
-  return '?'
-})
+  const u = user.value;
+  if (u?.full_name) return u.full_name.charAt(0).toUpperCase();
+  if (u?.email) return u.email.charAt(0).toUpperCase();
+  return "?";
+});
 
 function closeDropdown(e) {
   if (dropdownWrapRef.value && !dropdownWrapRef.value.contains(e.target)) {
-    dropdownOpen.value = false
+    dropdownOpen.value = false;
   }
 }
 
 onMounted(async () => {
-  await fetchUser()
-  document.addEventListener('click', closeDropdown)
-})
+  await fetchUser();
+  document.addEventListener("click", closeDropdown);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeDropdown)
-})
+  document.removeEventListener("click", closeDropdown);
+});
 
 function logout() {
-  dropdownOpen.value = false
-  doLogout()
-  router.push('/login')
+  dropdownOpen.value = false;
+  doLogout();
+  router.push("/login");
 }
 </script>
 
@@ -279,7 +299,7 @@ function logout() {
 
 .main {
   flex: 1;
-  max-width: 720px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem 1.25rem;
   width: 100%;

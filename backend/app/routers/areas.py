@@ -29,6 +29,7 @@ def create_area(
         user_id=current_user.id,
         name=data.name,
         description=data.description,
+        color=data.color,
     )
     db.add(area)
     db.commit()
@@ -70,6 +71,8 @@ def update_area(
         area.name = data.name
     if data.description is not None:
         area.description = data.description
+    if data.color is not None:
+        area.color = data.color
     db.commit()
     db.refresh(area)
     return area

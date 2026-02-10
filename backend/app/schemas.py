@@ -37,11 +37,13 @@ class TokenData(BaseModel):
 class AreaCreate(BaseModel):
     name: str
     description: str | None = None
+    color: str | None = None  # hex #rrggbb
 
 
 class AreaUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
+    color: str | None = None
 
 
 class AreaResponse(BaseModel):
@@ -49,6 +51,7 @@ class AreaResponse(BaseModel):
     user_id: int
     name: str
     description: str | None
+    color: str | None
     created_at: datetime
     updated_at: datetime
 
