@@ -1,0 +1,63 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuth } from '../composables/useAuth'
+import Home from '../views/Home.vue'
+import Login from '../views/Login.vue'
+import Register from '../views/Register.vue'
+import UsuarioLayout from '../views/UsuarioLayout.vue'
+import Usuario from '../views/Usuario.vue'
+import Configuracion from '../views/Configuracion.vue'
+import Areas from '../views/Areas.vue'
+import ConfiguracionAreas from '../views/ConfiguracionAreas.vue'
+
+const routes = [
+  { path: '/', name: 'Home', component: Home },
+  { path: '/login', name: 'Login', component: Login },
+  { path: '/registro', name: 'Register', component: Register },
+  {
+    path: '/areas',
+    name: 'Areas',
+    component: Areas,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/areas/configuracion',
+    name: 'ConfiguracionAreas',
+    component: ConfiguracionAreas,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/usuario',
+    component: UsuarioLayout,
+    meta: { requiresAuth: true },
+    children: [
+      { path: '', name: 'Usuario', component: Usuario, meta: { pageTitle: 'Mi espacio' } },
+      { path: 'configuracion', name: 'Configuracion', component: Configuracion, meta: { pageTitle: 'Configuración' } },
+    ],
+  },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+router.beforeEach(async (to, _from, next) => {
+  const auth = useAuth()
+  const requiresAuth = to.matched.some((r) => r.meta.requiresAuth)
+  if (requiresAuth) {
+    if (!auth.token.value) {
+      next({ name: 'Login', query: { redirect: to.fullPath } })
+      return
+    }
+    await auth.fetchUser()
+    if (!auth.token.value) {
+      next({ name: 'Login', query: { redirect: to.fullPath } })
+      return
+    }
+    next()
+  } else {
+    next()
+  }
+})
+
+export default router

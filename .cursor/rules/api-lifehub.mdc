@@ -1,0 +1,20 @@
+---
+description: Referencia de la API LifeHub (auth, endpoints, modelos)
+globs: backend/**/*
+alwaysApply: false
+---
+
+# API LifeHub – Referencia para la IA
+
+Al trabajar en el backend o en integración con la API de LifeHub, usa como referencia:
+
+**`docs/API-REFERENCIA.md`**
+
+Ese archivo contiene:
+
+- Base URL y uso de JWT (Bearer).
+- Endpoints de auth: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`.
+- Formato de request/response de cada endpoint.
+- Modelo de datos User y ubicación del código (models, schemas, security, routers).
+
+Consulta ese documento para mantener coherencia con la API existente y para implementar o modificar auth y usuarios.

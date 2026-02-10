@@ -1,0 +1,62 @@
+<template>
+  <div class="usuario-content">
+    <div v-if="user" class="card">
+      <p><strong>Email:</strong> {{ user.email }}</p>
+      <p v-if="user.full_name"><strong>Nombre:</strong> {{ user.full_name }}</p>
+    </div>
+    <nav class="nav">
+      <router-link to="/" class="btn btn-secondary">Inicio</router-link>
+    </nav>
+  </div>
+</template>
+
+<script setup>
+import { onMounted } from 'vue'
+import { useAuth } from '../composables/useAuth'
+
+const { user, fetchUser } = useAuth()
+
+onMounted(async () => {
+  await fetchUser()
+})
+</script>
+
+<style scoped>
+.usuario-content {
+  padding: 0.5rem 0;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1.5rem;
+}
+
+.card p {
+  margin: 0.5rem 0;
+}
+
+.nav {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  text-decoration: none;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+</style>
