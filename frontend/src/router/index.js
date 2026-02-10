@@ -12,26 +12,16 @@ import ConfiguracionAreas from '../views/ConfiguracionAreas.vue'
 const routes = [
   { path: '/', name: 'Home', component: Home },
   { path: '/login', name: 'Login', component: Login },
-  { path: '/registro', name: 'Register', component: Register },
+  { path: '/signup', name: 'Register', component: Register },
   {
-    path: '/areas',
-    name: 'Areas',
-    component: Areas,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/areas/configuracion',
-    name: 'ConfiguracionAreas',
-    component: ConfiguracionAreas,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/usuario',
+    path: '/dashboard',
     component: UsuarioLayout,
     meta: { requiresAuth: true },
     children: [
-      { path: '', name: 'Usuario', component: Usuario, meta: { pageTitle: 'Mi espacio' } },
-      { path: 'configuracion', name: 'Configuracion', component: Configuracion, meta: { pageTitle: 'Configuración' } },
+      { path: '', name: 'Dashboard', component: Areas, meta: { pageTitle: 'Áreas y proyectos' } },
+      { path: 'usuario', name: 'Usuario', component: Usuario, meta: { pageTitle: 'Mi perfil' } },
+      { path: 'usuario/configuracion', name: 'Configuracion', component: Configuracion, meta: { pageTitle: 'Configuración' } },
+      { path: 'configuracion-areas', name: 'ConfiguracionAreas', component: ConfiguracionAreas, meta: { pageTitle: 'Configuración áreas' } },
     ],
   },
 ]

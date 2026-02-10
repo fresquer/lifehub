@@ -2,7 +2,7 @@
   <div class="page">
     <header class="topbar">
       <div class="topbar-left">
-        <router-link to="/" class="brand">LifeHub</router-link>
+        <router-link to="/dashboard" class="brand">LifeHub</router-link>
         <span class="page-title">{{ pageTitle }}</span>
       </div>
       <div class="topbar-right" ref="dropdownWrapRef">
@@ -24,19 +24,19 @@
               <span class="dropdown-email">{{ user?.email }}</span>
             </div>
             <div class="dropdown-divider" />
-            <router-link to="/areas" class="dropdown-item" @click="dropdownOpen = false">
+            <router-link to="/dashboard" class="dropdown-item" @click="dropdownOpen = false">
               <span class="dropdown-icon">📂</span>
               Áreas y proyectos
             </router-link>
-            <router-link to="/usuario" class="dropdown-item" @click="dropdownOpen = false">
+            <router-link to="/dashboard/usuario" class="dropdown-item" @click="dropdownOpen = false">
               <span class="dropdown-icon">ℹ️</span>
               Info
             </router-link>
-            <router-link to="/usuario/configuracion" class="dropdown-item" @click="dropdownOpen = false">
+            <router-link to="/dashboard/usuario/configuracion" class="dropdown-item" @click="dropdownOpen = false">
               <span class="dropdown-icon">⚙️</span>
               Configuración
             </router-link>
-            <router-link to="/areas/configuracion" class="dropdown-item" @click="dropdownOpen = false">
+            <router-link to="/dashboard/configuracion-areas" class="dropdown-item" @click="dropdownOpen = false">
               <span class="dropdown-icon">📋</span>
               Configuración áreas
             </router-link>
@@ -66,7 +66,7 @@ const { user, fetchUser, logout: doLogout } = useAuth()
 const dropdownOpen = ref(false)
 const dropdownWrapRef = ref(null)
 
-const pageTitle = computed(() => route.meta.pageTitle || 'Mi espacio')
+const pageTitle = computed(() => route.meta.pageTitle || 'Áreas y proyectos')
 
 const userInitial = computed(() => {
   const u = user.value

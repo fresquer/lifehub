@@ -11,9 +11,9 @@
       </section>
       <nav class="nav">
         <router-link v-if="!isAuthenticated" to="/login" class="btn btn-primary">Iniciar sesión</router-link>
-        <router-link v-if="!isAuthenticated" to="/registro" class="btn btn-secondary">Registrarse</router-link>
-        <router-link v-if="isAuthenticated" to="/areas" class="btn btn-primary">Áreas y proyectos</router-link>
-        <router-link v-if="isAuthenticated" to="/usuario" class="btn btn-secondary">Mi perfil</router-link>
+        <router-link v-if="!isAuthenticated" to="/signup" class="btn btn-secondary">Registrarse</router-link>
+        <router-link v-if="isAuthenticated" to="/dashboard" class="btn btn-primary">Áreas y proyectos</router-link>
+        <router-link v-if="isAuthenticated" to="/dashboard/usuario" class="btn btn-secondary">Mi perfil</router-link>
       </nav>
     </main>
   </div>

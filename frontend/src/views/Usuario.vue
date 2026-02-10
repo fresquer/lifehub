@@ -5,7 +5,7 @@
       <p v-if="user.full_name"><strong>Nombre:</strong> {{ user.full_name }}</p>
     </div>
     <nav class="nav">
-      <router-link to="/" class="btn btn-secondary">Inicio</router-link>
+      <router-link to="/dashboard" class="btn btn-secondary">Inicio</router-link>
     </nav>
   </div>
 </template>

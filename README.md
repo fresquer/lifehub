@@ -100,6 +100,62 @@ Con eso accederías a la app por `https://lifehub.midominio.com` sin abrir el pu
 | 3    | `docker compose up --build -d`                     |
 | 4    | Abrir en el navegador: `http://IP_SERVIDOR:3000`   |
 
+## Despliegue automático en el servidor (polling)
+
+El servidor tiene internet salida (puede hacer `git pull`) pero no es accesible desde fuera. El script `scripts/deploy-on-push-check.py` comprueba cada cierto tiempo si hay nuevos commits en `origin/main` y, si los hay, hace `git pull` y `docker compose up --build -d`.
+
+### Ejecutarlo a mano (prueba)
+
+En la carpeta del proyecto en el servidor:
+
+```bash
+python3 scripts/deploy-on-push-check.py
+```
+
+### Levantarlo como servicio (systemd)
+
+Así se ejecuta solo cada 5 minutos.
+
+1. **Copia los unit files** de systemd y ajusta la ruta del proyecto:
+
+   ```bash
+   sudo cp scripts/systemd/lifehub-deploy-check.service /etc/systemd/system/
+   sudo cp scripts/systemd/lifehub-deploy-check.timer   /etc/systemd/system/
+   sudo nano /etc/systemd/system/lifehub-deploy-check.service
+   ```
+
+   Cambia `WorkingDirectory=/home/tu_usuario/LifeHub` por la ruta real (ej. `/home/ubuntu/LifeHub`).
+
+2. **Activa el timer** (no el service: el timer es quien dispara el service cada 5 min):
+
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable lifehub-deploy-check.timer
+   sudo systemctl start lifehub-deploy-check.timer
+   ```
+
+3. **Comprobar** que el timer está activo:
+
+   ```bash
+   systemctl list-timers --all | grep lifehub
+   ```
+
+   Para ver la próxima ejecución: `systemctl status lifehub-deploy-check.timer`. Para ejecutar el check una vez a mano: `sudo systemctl start lifehub-deploy-check.service`.
+
+### Alternativa: cron
+
+Si prefieres cron en lugar de systemd:
+
+```bash
+crontab -e
+```
+
+Añade (cambia `/home/tu_usuario/LifeHub` por tu ruta):
+
+```
+*/5 * * * * cd /home/tu_usuario/LifeHub && python3 scripts/deploy-on-push-check.py >> /var/log/lifehub-deploy.log 2>&1
+```
+
 ## Desarrollo con recarga automática (recomendado)
 
 Así no tienes que hacer `docker compose up --build` cada vez: solo la DB corre en Docker y backend/frontend en local; cualquier cambio en código se refleja al instante.

@@ -69,7 +69,7 @@ async function submit() {
     if (loginRes.ok && loginData.access_token) {
       setToken(loginData.access_token)
       await fetchUser()
-      router.push('/usuario')
+      router.push('/dashboard')
     } else {
       router.push('/login')
     }

@@ -25,7 +25,7 @@
         <p class="dev-url">O abre <router-link :to="{ path: '/login', query: { quick: '1', redirect: redirectTo } }">/login?quick=1</router-link> para entrar al instante.</p>
       </div>
       <p class="footer">
-        ¿No tienes cuenta? <router-link to="/registro">Regístrate</router-link>
+        ¿No tienes cuenta? <router-link to="/signup">Regístrate</router-link>
       </p>
     </main>
   </div>
@@ -45,7 +45,7 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
-const redirectTo = computed(() => route.query.redirect || '/usuario')
+const redirectTo = computed(() => route.query.redirect || '/dashboard')
 
 onMounted(() => {
   if (route.query.quick === '1') {

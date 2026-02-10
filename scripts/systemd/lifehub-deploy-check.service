@@ -1,0 +1,13 @@
+[Unit]
+Description=LifeHub deploy check (git pull + docker compose if main changed)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/tu_usuario/LifeHub
+ExecStart=/usr/bin/python3 scripts/deploy-on-push-check.py
+# Ajusta WorkingDirectory a la ruta real del proyecto en tu servidor (ej. /home/ubuntu/LifeHub)
+
+[Install]
+WantedBy=multi-user.target
