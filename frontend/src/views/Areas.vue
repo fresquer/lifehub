@@ -17,7 +17,9 @@
             <div class="area-header">
               <div class="area-header-text">
                 <h2 class="area-title">{{ area.name }}</h2>
-                <p v-if="area.description" class="area-desc">{{ area.description }}</p>
+                <p v-if="area.description" class="area-desc">
+                  {{ area.description }}
+                </p>
               </div>
               <button
                 type="button"
@@ -35,11 +37,17 @@
                 class="project-card"
                 role="button"
                 tabindex="0"
-                @click="editingProjectId === project.id ? null : openModal(project)"
-                @keydown.enter.space.prevent="editingProjectId !== project.id && openModal(project)"
+                @click="
+                  editingProjectId === project.id ? null : openModal(project)
+                "
+                @keydown.enter.space.prevent="
+                  editingProjectId !== project.id && openModal(project)
+                "
               >
                 <template v-if="editingProjectId === project.id">
-                  <span class="project-card-icon">{{ project.icon || DEFAULT_ICON }}</span>
+                  <span class="project-card-icon">{{
+                    project.icon || DEFAULT_ICON
+                  }}</span>
                   <input
                     ref="projectTitleInputRef"
                     v-model="editingTitle"
@@ -53,12 +61,13 @@
                   />
                 </template>
                 <template v-else>
-                  <span class="project-card-icon">{{ project.icon || DEFAULT_ICON }}</span>
+                  <span class="project-card-icon">{{
+                    project.icon || DEFAULT_ICON
+                  }}</span>
                   <h3 class="project-name">{{ project.name }}</h3>
-                  <p v-if="project.description" class="project-desc">{{ project.description }}</p>
                 </template>
               </div>
-              <div v-if="!(projectsByArea[area.id]?.length)" class="no-projects">
+              <div v-if="!projectsByArea[area.id]?.length" class="no-projects">
                 Sin proyectos en esta área
               </div>
             </div>
@@ -75,7 +84,12 @@
           class="modal-backdrop"
           @click.self="closeModal"
         >
-          <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <div
+            class="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+          >
             <div class="modal-header">
               <div class="modal-title-row">
                 <div class="emoji-wrap" ref="emojiPickerWrapRef">
@@ -88,7 +102,11 @@
                     {{ modalIcon || DEFAULT_ICON }}
                   </button>
                   <Transition name="picker">
-                    <div v-if="emojiPickerOpen" class="emoji-picker-wrap" @click.stop>
+                    <div
+                      v-if="emojiPickerOpen"
+                      class="emoji-picker-wrap"
+                      @click.stop
+                    >
                       <EmojiPicker
                         :native="true"
                         theme="dark"
@@ -105,6 +123,7 @@
                   type="text"
                   class="modal-title-input"
                   placeholder="Título del proyecto"
+                  @keydown.enter.prevent="saveModalProject"
                 />
               </div>
               <button
@@ -139,7 +158,11 @@
                 Borrar proyecto
               </button>
               <div class="modal-footer-right">
-                <button type="button" class="modal-btn modal-btn-secondary" @click="closeModal">
+                <button
+                  type="button"
+                  class="modal-btn modal-btn-secondary"
+                  @click="closeModal"
+                >
                   Cancelar
                 </button>
                 <button
@@ -160,205 +183,221 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { useAuth } from '../composables/useAuth'
-import { useApi } from '../composables/useApi'
-import EmojiPicker from 'vue3-emoji-picker'
-import 'vue3-emoji-picker/css'
+import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
+import { useAuth } from "../composables/useAuth";
+import { useApi } from "../composables/useApi";
+import EmojiPicker from "vue3-emoji-picker";
+import "vue3-emoji-picker/css";
 
-const { fetchUser } = useAuth()
-const { get, post, patch, delete: del } = useApi()
+const { fetchUser } = useAuth();
+const { get, post, patch, delete: del } = useApi();
 
-const DEFAULT_ICON = '📄'
+const DEFAULT_ICON = "📄";
 
-const loading = ref(true)
-const error = ref('')
-const areas = ref([])
-const projects = ref([])
-const addingAreaId = ref(null)
-const editingProjectId = ref(null)
-const editingTitle = ref('')
-const selectedProject = ref(null)
-const projectTitleInputRef = ref(null)
-const modalTitle = ref('')
-const modalDescription = ref('')
-const modalIcon = ref('')
-const modalSaving = ref(false)
-const emojiPickerOpen = ref(false)
-const emojiPickerWrapRef = ref(null)
+const loading = ref(true);
+const error = ref("");
+const areas = ref([]);
+const projects = ref([]);
+const addingAreaId = ref(null);
+const editingProjectId = ref(null);
+const editingTitle = ref("");
+const selectedProject = ref(null);
+const projectTitleInputRef = ref(null);
+const modalTitle = ref("");
+const modalDescription = ref("");
+const modalIcon = ref("");
+const modalSaving = ref(false);
+const emojiPickerOpen = ref(false);
+const emojiPickerWrapRef = ref(null);
 
-const AREA_ORDER_KEY = 'lifehub_area_order'
+const AREA_ORDER_KEY = "lifehub_area_order";
 
 /** Acento por defecto cuando el área no tiene color. */
-const DEFAULT_AREA_ACCENT = '#64748b'
+const DEFAULT_AREA_ACCENT = "#64748b";
 
 function areaSectionStyle(area) {
-  const color = area.color || DEFAULT_AREA_ACCENT
+  const color = area.color || DEFAULT_AREA_ACCENT;
   return {
-    '--area-accent': color,
+    "--area-accent": color,
     borderLeftColor: color,
-  }
+  };
 }
 
 function getStoredAreaOrder() {
   try {
-    const raw = localStorage.getItem(AREA_ORDER_KEY)
-    if (!raw) return []
-    const arr = JSON.parse(raw)
-    return Array.isArray(arr) ? arr.filter(Number.isInteger) : []
+    const raw = localStorage.getItem(AREA_ORDER_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.filter(Number.isInteger) : [];
   } catch {
-    return []
+    return [];
   }
 }
 
 const orderedAreas = computed(() => {
-  const order = getStoredAreaOrder()
-  const byId = Object.fromEntries(areas.value.map((a) => [a.id, a]))
-  const result = []
+  const order = getStoredAreaOrder();
+  const byId = Object.fromEntries(areas.value.map((a) => [a.id, a]));
+  const result = [];
   for (const id of order) {
     if (byId[id]) {
-      result.push(byId[id])
-      delete byId[id]
+      result.push(byId[id]);
+      delete byId[id];
     }
   }
-  result.push(...Object.values(byId).sort((a, b) => a.name.localeCompare(b.name)))
-  return result
-})
+  result.push(
+    ...Object.values(byId).sort((a, b) => a.name.localeCompare(b.name))
+  );
+  return result;
+});
 
 const projectsByArea = computed(() => {
-  const byId = {}
-  for (const a of areas.value) byId[a.id] = []
+  const byId = {};
+  for (const a of areas.value) byId[a.id] = [];
   for (const p of projects.value) {
-    if (byId[p.area_id]) byId[p.area_id].push(p)
+    if (byId[p.area_id]) byId[p.area_id].push(p);
   }
-  return byId
-})
+  return byId;
+});
 
 function areaNameFor(project) {
-  if (!project) return ''
-  return areas.value.find((a) => a.id === project.area_id)?.name ?? ''
+  if (!project) return "";
+  return areas.value.find((a) => a.id === project.area_id)?.name ?? "";
 }
 
 async function addProject(area) {
-  if (addingAreaId.value) return
-  addingAreaId.value = area.id
+  if (addingAreaId.value) return;
+  addingAreaId.value = area.id;
   try {
-    const created = await post('projects', {
+    const created = await post("projects", {
       area_id: area.id,
-      name: 'Nuevo proyecto',
+      name: "Nuevo proyecto",
       icon: DEFAULT_ICON,
-    })
-    projects.value = [...projects.value, created]
-    editingProjectId.value = created.id
-    editingTitle.value = created.name
-    await nextTick()
+    });
+    projects.value = [...projects.value, created];
+    editingProjectId.value = created.id;
+    editingTitle.value = created.name;
+    await nextTick();
     const el = Array.isArray(projectTitleInputRef.value)
       ? projectTitleInputRef.value[0]
-      : projectTitleInputRef.value
-    el?.focus()
+      : projectTitleInputRef.value;
+    el?.focus();
   } catch (e) {
-    error.value = e.message || 'Error al crear proyecto'
+    error.value = e.message || "Error al crear proyecto";
   } finally {
-    addingAreaId.value = null
+    addingAreaId.value = null;
   }
 }
 
 function openModal(project) {
-  selectedProject.value = project
-  modalTitle.value = project.name
-  modalDescription.value = project.description ?? ''
-  modalIcon.value = project.icon ?? ''
-  emojiPickerOpen.value = false
+  selectedProject.value = project;
+  modalTitle.value = project.name;
+  modalDescription.value = project.description ?? "";
+  modalIcon.value = project.icon ?? "";
+  emojiPickerOpen.value = false;
 }
 
 function pickEmoji(emoji) {
-  if (emoji?.i) modalIcon.value = emoji.i
-  emojiPickerOpen.value = false
+  if (emoji?.i) modalIcon.value = emoji.i;
+  emojiPickerOpen.value = false;
 }
 
 function closeModal() {
-  selectedProject.value = null
+  selectedProject.value = null;
 }
 
 async function saveModalProject() {
-  if (!selectedProject.value || modalSaving.value) return
-  const name = (modalTitle.value || '').trim() || selectedProject.value.name
-  const description = (modalDescription.value || '').trim() || null
-  const icon = modalIcon.value || null
-  modalSaving.value = true
+  if (!selectedProject.value || modalSaving.value) return;
+  const name = (modalTitle.value || "").trim() || selectedProject.value.name;
+  const description = (modalDescription.value || "").trim() || null;
+  const icon = modalIcon.value || null;
+  modalSaving.value = true;
   try {
-    const updated = await patch(`projects/${selectedProject.value.id}`, { name, description, icon })
-    const i = projects.value.findIndex((p) => p.id === selectedProject.value.id)
-    if (i !== -1) projects.value[i] = { ...projects.value[i], ...updated }
-    selectedProject.value = { ...selectedProject.value, ...updated }
+    const updated = await patch(`projects/${selectedProject.value.id}`, {
+      name,
+      description,
+      icon,
+    });
+    const i = projects.value.findIndex(
+      (p) => p.id === selectedProject.value.id
+    );
+    if (i !== -1) projects.value[i] = { ...projects.value[i], ...updated };
+    selectedProject.value = { ...selectedProject.value, ...updated };
+    closeModal();
   } catch (e) {
-    error.value = e.message || 'Error al guardar'
+    error.value = e.message || "Error al guardar";
   } finally {
-    modalSaving.value = false
+    modalSaving.value = false;
   }
 }
 
 async function deleteProject() {
-  if (!selectedProject.value || modalSaving.value) return
-  if (!confirm('¿Borrar este proyecto? Esta acción no se puede deshacer.')) return
-  modalSaving.value = true
+  if (!selectedProject.value || modalSaving.value) return;
+  if (!confirm("¿Borrar este proyecto? Esta acción no se puede deshacer."))
+    return;
+  modalSaving.value = true;
   try {
-    await del(`projects/${selectedProject.value.id}`)
-    projects.value = projects.value.filter((p) => p.id !== selectedProject.value.id)
-    closeModal()
+    await del(`projects/${selectedProject.value.id}`);
+    projects.value = projects.value.filter(
+      (p) => p.id !== selectedProject.value.id
+    );
+    closeModal();
   } catch (e) {
-    error.value = e.message || 'Error al borrar'
+    error.value = e.message || "Error al borrar";
   } finally {
-    modalSaving.value = false
+    modalSaving.value = false;
   }
 }
 
 async function saveProjectTitle(project) {
-  if (editingProjectId.value !== project.id) return
-  const name = (editingTitle.value || '').trim() || 'Nuevo proyecto'
+  if (editingProjectId.value !== project.id) return;
+  const name = (editingTitle.value || "").trim() || "Nuevo proyecto";
   try {
-    const updated = await patch(`projects/${project.id}`, { name })
-    const i = projects.value.findIndex((p) => p.id === project.id)
-    if (i !== -1) projects.value[i] = { ...projects.value[i], ...updated }
-    editingProjectId.value = null
-    editingTitle.value = ''
+    const updated = await patch(`projects/${project.id}`, { name });
+    const i = projects.value.findIndex((p) => p.id === project.id);
+    if (i !== -1) projects.value[i] = { ...projects.value[i], ...updated };
+    editingProjectId.value = null;
+    editingTitle.value = "";
   } catch (e) {
-    error.value = e.message || 'Error al guardar'
+    error.value = e.message || "Error al guardar";
   }
 }
 
 async function loadData() {
-  loading.value = true
-  error.value = ''
+  loading.value = true;
+  error.value = "";
   try {
     const [areasData, projectsData] = await Promise.all([
-      get('areas'),
-      get('projects'),
-    ])
-    areas.value = areasData
-    projects.value = projectsData
+      get("areas"),
+      get("projects"),
+    ]);
+    areas.value = areasData;
+    projects.value = projectsData;
   } catch (e) {
-    error.value = e.message || 'Error al cargar datos'
+    error.value = e.message || "Error al cargar datos";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
 function closeEmojiPicker(e) {
-  if (emojiPickerOpen.value && emojiPickerWrapRef.value && !emojiPickerWrapRef.value.contains(e.target)) {
-    emojiPickerOpen.value = false
+  if (
+    emojiPickerOpen.value &&
+    emojiPickerWrapRef.value &&
+    !emojiPickerWrapRef.value.contains(e.target)
+  ) {
+    emojiPickerOpen.value = false;
   }
 }
 
 onMounted(async () => {
-  await fetchUser()
-  await loadData()
-  document.addEventListener('click', closeEmojiPicker)
-})
+  await fetchUser();
+  await loadData();
+  document.addEventListener("click", closeEmojiPicker);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', closeEmojiPicker)
-})
+  document.removeEventListener("click", closeEmojiPicker);
+});
 </script>
 
 <style scoped>
@@ -430,17 +469,18 @@ onUnmounted(() => {
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--area-accent, #3b82f6);
-  background: color-mix(in srgb, var(--area-accent, #3b82f6) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--area-accent, #3b82f6) 35%, transparent);
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
 
 .btn-add-project:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--area-accent, #3b82f6) 25%, transparent);
-  border-color: color-mix(in srgb, var(--area-accent, #3b82f6) 50%, transparent);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #cbd5e1;
 }
 
 .btn-add-project:disabled {
@@ -539,17 +579,6 @@ onUnmounted(() => {
   font-weight: 600;
   color: #e2e8f0;
   margin: 0 0 0.35rem 0;
-}
-
-.project-desc {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  margin: 0;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .no-projects {
