@@ -1,4 +1,4 @@
-#!/bin/sh
+y l#!/bin/sh
 set -e
 
 # Migraciones: se ejecutan en cada arranque (son idempotentes con IF NOT EXISTS).

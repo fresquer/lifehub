@@ -1,0 +1,50 @@
+---
+description: Crear migración siempre que se toque la base de datos o se añadan/cambien campos
+alwaysApply: true
+---
+
+# Migraciones de base de datos
+
+Siempre que se modifique el esquema de la base de datos (nuevas tablas, nuevas columnas, quitar columnas, índices, etc.) hay que **crear una migración** para que se pueda ejecutar en todos los entornos (dev, prod) y al hacer `docker compose up --build -d`.
+
+## Qué requiere migración
+
+- Añadir o quitar columnas en cualquier tabla
+- Crear o eliminar tablas
+- Cambiar tipos, constraints, índices
+
+## Cómo hacerlo
+
+1. **Crear un script** en `backend/scripts/` con el patrón `run_add_<nombre>.py` (o `run_alter_<nombre>.py` si es un cambio/borrado).
+2. **Usar SQL idempotente**: `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, etc., para que se pueda ejecutar varias veces sin error.
+3. **Usar el engine del proyecto**: importar `from app.database import engine` y ejecutar con `text(SQL)` y `conn.commit()`.
+4. **Añadir al entrypoint** (`backend/entrypoint.sh`): si no se añade aquí, la migración no se ejecutará al hacer `docker compose up`. Incluir una línea nueva justo antes de `exec "$@"`, por ejemplo:
+   ```sh
+   python /app/scripts/run_add_<nombre>.py
+   ```
+
+## Checklist por migración
+
+- [ ] Script en `backend/scripts/run_add_<nombre>.py` (o `run_alter_*`)
+- [ ] **Línea añadida en `backend/entrypoint.sh`** que ejecute ese script
+
+## Ejemplo (nueva columna)
+
+```python
+# backend/scripts/run_add_xxx.py
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from sqlalchemy import text
+from app.database import engine
+
+SQL = "ALTER TABLE mi_tabla ADD COLUMN IF NOT EXISTS mi_columna VARCHAR(50) NULL;"
+
+if __name__ == "__main__":
+    with engine.connect() as conn:
+        conn.execute(text(SQL))
+        conn.commit()
+    print("Columna mi_tabla.mi_columna añadida (o ya existía).")
+```
+
+Si solo cambias lógica (Python/Vue), endpoints o configuración y no el esquema de la BD, no hace falta migración.
