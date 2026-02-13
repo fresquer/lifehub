@@ -65,6 +65,15 @@
                     project.icon || DEFAULT_ICON
                   }}</span>
                   <h3 class="project-name">{{ project.name }}</h3>
+                  <p
+                    v-if="project.next_action"
+                    class="project-next-action"
+                  >
+                    Siguiente: {{ project.next_action }}
+                  </p>
+                  <p v-else class="project-next-action empty">
+                    Sin siguiente acción
+                  </p>
                 </template>
               </div>
               <div v-if="!projectsByArea[area.id]?.length" class="no-projects">
@@ -136,6 +145,26 @@
               </button>
             </div>
             <div class="modal-body">
+              <div class="modal-next-action-block">
+                <label class="modal-label">Siguiente acción</label>
+                <div class="modal-next-action-row">
+                  <input
+                    v-model="modalNextAction"
+                    type="text"
+                    class="modal-next-action-input"
+                    placeholder="¿Cuál es la siguiente acción?"
+                  />
+                  <button
+                    v-if="modalNextAction.trim()"
+                    type="button"
+                    class="modal-btn modal-btn-completada"
+                    :disabled="modalSaving"
+                    @click="markNextActionComplete"
+                  >
+                    Completada
+                  </button>
+                </div>
+              </div>
               <label class="modal-label">Descripción</label>
               <textarea
                 v-model="modalDescription"
@@ -205,6 +234,7 @@ const selectedProject = ref(null);
 const projectTitleInputRef = ref(null);
 const modalTitle = ref("");
 const modalDescription = ref("");
+const modalNextAction = ref("");
 const modalIcon = ref("");
 const modalSaving = ref(false);
 const emojiPickerOpen = ref(false);
@@ -292,6 +322,7 @@ function openModal(project) {
   selectedProject.value = project;
   modalTitle.value = project.name;
   modalDescription.value = project.description ?? "";
+  modalNextAction.value = project.next_action ?? "";
   modalIcon.value = project.icon ?? "";
   emojiPickerOpen.value = false;
 }
@@ -305,10 +336,31 @@ function closeModal() {
   selectedProject.value = null;
 }
 
+async function markNextActionComplete() {
+  if (!selectedProject.value || modalSaving.value) return;
+  modalSaving.value = true;
+  try {
+    const updated = await patch(`projects/${selectedProject.value.id}`, {
+      next_action: "",
+    });
+    const i = projects.value.findIndex(
+      (p) => p.id === selectedProject.value.id
+    );
+    if (i !== -1) projects.value[i] = { ...projects.value[i], ...updated };
+    selectedProject.value = { ...selectedProject.value, ...updated };
+    modalNextAction.value = "";
+  } catch (e) {
+    error.value = e.message || "Error al guardar";
+  } finally {
+    modalSaving.value = false;
+  }
+}
+
 async function saveModalProject() {
   if (!selectedProject.value || modalSaving.value) return;
   const name = (modalTitle.value || "").trim() || selectedProject.value.name;
   const description = (modalDescription.value || "").trim() || null;
+  const next_action = (modalNextAction.value || "").trim() || null;
   const icon = modalIcon.value || null;
   modalSaving.value = true;
   try {
@@ -316,6 +368,7 @@ async function saveModalProject() {
       name,
       description,
       icon,
+      next_action,
     });
     const i = projects.value.findIndex(
       (p) => p.id === selectedProject.value.id
@@ -405,8 +458,8 @@ onUnmounted(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-page, #0f172a);
-  color: var(--text, #e2e8f0);
+  background: var(--bg-page);
+  color: var(--text);
 }
 
 .main {
@@ -420,21 +473,21 @@ onUnmounted(() => {
 
 .status {
   text-align: center;
-  color: #94a3b8;
+  color: var(--text-muted);
   padding: 2rem;
 }
 
 .status.error {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .empty {
   text-align: center;
-  color: #94a3b8;
+  color: var(--text-muted);
   padding: 3rem 1.5rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hover-bg);
   border-radius: 1rem;
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border: 1px dashed var(--card-border-subtle);
 }
 
 .areas-scroll {
@@ -444,9 +497,9 @@ onUnmounted(() => {
 }
 
 .area-section {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 8px solid var(--area-accent, var(--default-accent, #64748b));
+  background: var(--hover-bg);
+  border: 1px solid var(--card-border-subtle);
+  border-left: 8px solid var(--area-accent, var(--default-accent));
   border-radius: 1rem;
   padding: 1.25rem;
 }
@@ -469,18 +522,18 @@ onUnmounted(() => {
   padding: 0.4rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  background: var(--hover-bg);
+  border: 1px solid var(--card-border);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
 
 .btn-add-project:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.22);
-  color: #cbd5e1;
+  background: var(--hover-bg);
+  border-color: var(--hover-border);
+  color: var(--text);
 }
 
 .btn-add-project:disabled {
@@ -491,13 +544,13 @@ onUnmounted(() => {
 .area-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #f1f5f9;
+  color: var(--text-strong);
   margin: 0 0 0.25rem 0;
 }
 
 .area-desc {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   margin: 0;
   line-height: 1.4;
 }
@@ -528,19 +581,19 @@ onUnmounted(() => {
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--hover-bg);
+  border: 1px solid var(--card-border);
   border-radius: 0.75rem;
   transition: border-color 0.2s, background 0.2s;
 }
 
 .project-card:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: var(--hover-bg);
+  border-color: var(--hover-border);
 }
 
 .project-card:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.6);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -555,9 +608,9 @@ onUnmounted(() => {
   min-width: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 0.35rem;
   padding: 0.35rem 0.5rem;
   margin: 0;
@@ -565,11 +618,11 @@ onUnmounted(() => {
 }
 
 .project-name-input:focus {
-  border-color: #3b82f6;
+  border-color: var(--primary);
 }
 
 .project-name-input::placeholder {
-  color: #64748b;
+  color: var(--input-placeholder);
 }
 
 .project-name {
@@ -577,14 +630,30 @@ onUnmounted(() => {
   min-width: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--text);
   margin: 0 0 0.35rem 0;
+}
+
+.project-next-action {
+  width: 100%;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0.25rem 0 0;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-next-action.empty {
+  color: var(--input-placeholder);
+  font-style: italic;
 }
 
 .no-projects {
   grid-column: 1 / -1;
   padding: 1rem 1.5rem;
-  color: #64748b;
+  color: var(--input-placeholder);
   font-size: 0.9rem;
   display: flex;
   align-items: center;
@@ -595,7 +664,7 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -604,12 +673,12 @@ onUnmounted(() => {
 }
 
 .modal-card {
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 1rem;
   max-width: 420px;
   width: 100%;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-modal-lg);
 }
 
 .modal-header {
@@ -641,16 +710,16 @@ onUnmounted(() => {
   justify-content: center;
   font-size: 1.75rem;
   line-height: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--hover-bg);
+  border: 1px solid var(--card-border);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
 }
 
 .emoji-trigger:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--hover-bg);
+  border-color: var(--hover-border);
 }
 
 .emoji-picker-wrap {
@@ -660,11 +729,11 @@ onUnmounted(() => {
   z-index: 10;
   border-radius: 0.75rem;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-modal);
 }
 
 .emoji-picker-wrap :deep(.VueEmojiPicker) {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--card-border);
   border-radius: 0.75rem;
 }
 
@@ -684,20 +753,20 @@ onUnmounted(() => {
   min-width: 0;
   font-size: 1.25rem;
   font-weight: 600;
-  color: #f1f5f9;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
   border-radius: 0.5rem;
   padding: 0.5rem 0.75rem;
   outline: none;
 }
 
 .modal-title-input:focus {
-  border-color: #3b82f6;
+  border-color: var(--primary);
 }
 
 .modal-title-input::placeholder {
-  color: #64748b;
+  color: var(--input-placeholder);
 }
 
 .modal-close {
@@ -709,7 +778,7 @@ onUnmounted(() => {
   justify-content: center;
   font-size: 1.5rem;
   line-height: 1;
-  color: #94a3b8;
+  color: var(--text-muted);
   background: none;
   border: none;
   border-radius: 0.5rem;
@@ -718,29 +787,70 @@ onUnmounted(() => {
 }
 
 .modal-close:hover {
-  color: #e2e8f0;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  background: var(--hover-bg);
 }
 
 .modal-body {
   padding: 0.5rem 1.25rem 1rem;
 }
 
+.modal-next-action-block {
+  margin-bottom: 1rem;
+}
+
+.modal-next-action-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.modal-next-action-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1rem;
+  color: var(--text-strong);
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+}
+
+.modal-next-action-input:focus {
+  border-color: var(--primary);
+}
+
+.modal-next-action-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.modal-btn-completada {
+  flex-shrink: 0;
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+
+.modal-btn-completada:hover:not(:disabled) {
+  background: var(--success-bg);
+}
+
 .modal-label {
   display: block;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--text-muted);
   margin: 0 0 0.35rem 0;
 }
 
 .modal-desc-input {
   width: 100%;
   font-size: 0.95rem;
-  color: #cbd5e1;
+  color: var(--text);
   line-height: 1.5;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
   border-radius: 0.5rem;
   padding: 0.6rem 0.75rem;
   margin-bottom: 1rem;
@@ -750,16 +860,16 @@ onUnmounted(() => {
 }
 
 .modal-desc-input:focus {
-  border-color: #3b82f6;
+  border-color: var(--primary);
 }
 
 .modal-desc-input::placeholder {
-  color: #64748b;
+  color: var(--input-placeholder);
 }
 
 .modal-area {
   font-size: 0.9rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -775,7 +885,7 @@ onUnmounted(() => {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 1rem 1.25rem 1.25rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--topbar-border);
 }
 
 .modal-footer-right {
@@ -799,32 +909,32 @@ onUnmounted(() => {
 }
 
 .modal-btn-primary {
-  background: #3b82f6;
+  background: var(--primary);
   color: #fff;
 }
 
 .modal-btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--primary-hover);
 }
 
 .modal-btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--hover-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
 }
 
 .modal-btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--hover-bg);
 }
 
 .modal-btn-danger {
-  background: rgba(248, 113, 113, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
 }
 
 .modal-btn-danger:hover:not(:disabled) {
-  background: rgba(248, 113, 113, 0.25);
+  background: var(--danger-bg);
 }
 
 .modal-enter-active,

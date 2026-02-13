@@ -8,6 +8,15 @@
       <div class="topbar-right" ref="dropdownWrapRef">
         <button
           type="button"
+          class="theme-toggle"
+          :aria-label="theme === 'dark' ? 'Usar tema claro' : 'Usar tema oscuro'"
+          :title="theme === 'dark' ? 'Tema claro' : 'Tema oscuro'"
+          @click="toggle()"
+        >
+          <span class="theme-icon" aria-hidden="true">{{ theme === 'dark' ? '☀' : '🌙' }}</span>
+        </button>
+        <button
+          type="button"
           class="user-trigger"
           :aria-expanded="dropdownOpen"
           aria-haspopup="true"
@@ -35,6 +44,14 @@
             >
               <span class="dropdown-icon">📂</span>
               Áreas y proyectos
+            </router-link>
+            <router-link
+              to="/dashboard/tareas"
+              class="dropdown-item"
+              @click="dropdownOpen = false"
+            >
+              <span class="dropdown-icon">✓</span>
+              Tareas
             </router-link>
             <router-link
               to="/dashboard/usuario"
@@ -79,8 +96,10 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
+import { useTheme } from "../composables/useTheme";
 
 const route = useRoute();
+const { theme, toggle } = useTheme();
 const router = useRouter();
 const { user, fetchUser, logout: doLogout } = useAuth();
 const dropdownOpen = ref(false);
@@ -122,8 +141,8 @@ function logout() {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-page, #0f172a);
-  color: var(--text, #e2e8f0);
+  background: var(--bg-page);
+  color: var(--text);
 }
 
 .topbar {
@@ -135,8 +154,8 @@ function logout() {
   justify-content: space-between;
   height: 56px;
   padding: 0 1.25rem;
-  background: rgba(15, 23, 42, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--topbar-border);
   backdrop-filter: blur(8px);
 }
 
@@ -149,22 +168,50 @@ function logout() {
 .brand {
   font-weight: 700;
   font-size: 1.15rem;
-  color: #e2e8f0;
+  color: var(--text);
   text-decoration: none;
 }
 
 .brand:hover {
-  color: #f8fafc;
+  color: var(--text-strong);
 }
 
 .page-title {
   font-size: 0.95rem;
-  color: #94a3b8;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
 .topbar-right {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.theme-toggle:hover {
+  background: var(--hover-bg);
+  color: var(--text-strong);
+}
+
+.theme-icon {
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
 .user-trigger {
@@ -175,22 +222,22 @@ function logout() {
   border-radius: 0.5rem;
   border: 1px solid transparent;
   background: transparent;
-  color: #e2e8f0;
+  color: var(--text);
   cursor: pointer;
   font-size: 0.9rem;
   max-width: 220px;
 }
 
 .user-trigger:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--hover-bg);
+  border-color: var(--hover-border);
 }
 
 .user-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  background: var(--avatar-gradient);
   color: #fff;
   display: flex;
   align-items: center;
@@ -204,12 +251,12 @@ function logout() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .dropdown-chevron {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--input-placeholder);
   transition: transform 0.2s;
 }
 
@@ -223,10 +270,10 @@ function logout() {
   right: 0;
   min-width: 220px;
   padding: 0.5rem 0;
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: 0.75rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-modal);
 }
 
 .dropdown-header {
@@ -239,17 +286,17 @@ function logout() {
 .dropdown-name {
   font-weight: 600;
   font-size: 0.95rem;
-  color: #f1f5f9;
+  color: var(--text-strong);
 }
 
 .dropdown-email {
   font-size: 0.8rem;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .dropdown-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--topbar-border);
   margin: 0.25rem 0;
 }
 
@@ -261,7 +308,7 @@ function logout() {
   padding: 0.6rem 1rem;
   border: none;
   background: none;
-  color: #e2e8f0;
+  color: var(--text);
   font-size: 0.9rem;
   text-align: left;
   cursor: pointer;
@@ -270,15 +317,15 @@ function logout() {
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hover-bg);
 }
 
 .dropdown-item.danger {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .dropdown-item.danger:hover {
-  background: rgba(248, 113, 113, 0.1);
+  background: var(--danger-bg);
 }
 
 .dropdown-icon {

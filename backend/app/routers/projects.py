@@ -46,6 +46,7 @@ def create_project(
         icon=data.icon,
         name=data.name,
         description=data.description,
+        next_action=data.next_action,
     )
     db.add(project)
     db.commit()
@@ -102,6 +103,8 @@ def update_project(
     if data.area_id is not None:
         _ensure_area_belongs_to_user(db, data.area_id, current_user.id)
         project.area_id = data.area_id
+    if data.next_action is not None:
+        project.next_action = data.next_action.strip() or None
     db.commit()
     db.refresh(project)
     return project

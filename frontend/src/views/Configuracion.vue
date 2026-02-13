@@ -20,7 +20,7 @@
 }
 
 .text-muted {
-  color: #94a3b8;
+  color: var(--text-muted);
   font-size: 0.95rem;
 }
 </style>

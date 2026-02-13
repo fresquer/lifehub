@@ -42,6 +42,17 @@ SQL_TABLES = [
         icon VARCHAR(20),
         name VARCHAR(255) NOT NULL,
         description VARCHAR(1000),
+        next_action VARCHAR(500),
+        created_at TIMESTAMPTZ DEFAULT now(),
+        updated_at TIMESTAMPTZ DEFAULT now()
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS one_shot_tasks (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(500) NOT NULL,
+        done BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMPTZ DEFAULT now(),
         updated_at TIMESTAMPTZ DEFAULT now()
     );
@@ -52,12 +63,14 @@ SQL_TABLES = [
 SQL_INDEXES = [
     "CREATE INDEX IF NOT EXISTS ix_areas_user_id ON areas (user_id);",
     "CREATE INDEX IF NOT EXISTS ix_projects_area_id ON projects (area_id);",
+    "CREATE INDEX IF NOT EXISTS ix_one_shot_tasks_user_id ON one_shot_tasks (user_id);",
 ]
 
 # 3) Columnas añadidas después (BDs que ya tenían las tablas sin estas columnas)
 SQL_ALTERS = [
     "ALTER TABLE areas ADD COLUMN IF NOT EXISTS color VARCHAR(7) NULL;",
     "ALTER TABLE projects ADD COLUMN IF NOT EXISTS icon VARCHAR(20) NULL;",
+    "ALTER TABLE projects ADD COLUMN IF NOT EXISTS next_action VARCHAR(500) NULL;",
 ]
 
 

@@ -16,8 +16,8 @@
 
 body {
   font-family: system-ui, -apple-system, sans-serif;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  background: var(--bg-page-gradient);
   min-height: 100vh;
-  color: #eee;
+  color: var(--text);
 }
 </style>

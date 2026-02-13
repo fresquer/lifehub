@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -14,6 +14,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     areas = relationship("Area", back_populates="user", cascade="all, delete-orphan")
+    one_shot_tasks = relationship("OneShotTask", back_populates="user", cascade="all, delete-orphan")
 
 
 class Area(Base):
@@ -43,7 +44,23 @@ class Project(Base):
     icon = Column(String(20), nullable=True)  # emoji para mostrar junto al título (estilo Notion)
     name = Column(String(255), nullable=False)
     description = Column(String(1000), nullable=True)
+    next_action = Column(String(500), nullable=True)  # siguiente acción GTD
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     area = relationship("Area", back_populates="projects")
+
+
+class OneShotTask(Base):
+    """Tarea sin proyecto (one-shot). Pertenece a un usuario."""
+
+    __tablename__ = "one_shot_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(500), nullable=False)
+    done = Column(Boolean, nullable=False, server_default="false")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", back_populates="one_shot_tasks")

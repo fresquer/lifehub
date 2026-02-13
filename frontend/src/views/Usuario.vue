@@ -27,10 +27,10 @@ onMounted(async () => {
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--hover-bg);
   border-radius: 1rem;
   padding: 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--card-border-subtle);
   margin-bottom: 1.5rem;
 }
 
@@ -55,8 +55,8 @@ onMounted(async () => {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--hover-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
 }
 </style>

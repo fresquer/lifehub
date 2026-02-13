@@ -88,22 +88,22 @@ async function quickLogin() {
 .page { max-width: 420px; margin: 0 auto; padding: 2rem; }
 .header { text-align: center; margin-bottom: 2rem; }
 .header h1 { font-size: 1.75rem; font-weight: 700; }
-.tagline { color: #94a3b8; margin-top: 0.25rem; font-size: 0.9rem; }
-.main { background: rgba(255,255,255,0.05); border-radius: 1rem; padding: 1.5rem; border: 1px solid rgba(255,255,255,0.08); }
+.tagline { color: var(--text-muted); margin-top: 0.25rem; font-size: 0.9rem; }
+.main { background: var(--hover-bg); border-radius: 1rem; padding: 1.5rem; border: 1px solid var(--card-border-subtle); }
 .form { display: flex; flex-direction: column; gap: 1rem; }
 .field { display: flex; flex-direction: column; gap: 0.35rem; }
-.field label { font-size: 0.875rem; color: #94a3b8; }
-.field input { padding: 0.6rem 0.75rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: #fff; }
-.field input::placeholder { color: #64748b; }
-.error { color: #f87171; font-size: 0.875rem; margin: 0; }
+.field label { font-size: 0.875rem; color: var(--text-muted); }
+.field input { padding: 0.6rem 0.75rem; border-radius: 0.5rem; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); }
+.field input::placeholder { color: var(--input-placeholder); }
+.error { color: var(--danger); font-size: 0.875rem; margin: 0; }
 .btn { padding: 0.6rem 1rem; border-radius: 0.5rem; border: none; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.btn-primary { background: #3b82f6; color: #fff; }
-.dev-quick { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); }
-.dev-label { font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem; }
+.btn-primary { background: var(--primary); color: #fff; }
+.dev-quick { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--topbar-border); }
+.dev-label { font-size: 0.75rem; color: var(--input-placeholder); margin-bottom: 0.5rem; }
 .btn-dev { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4); font-size: 0.875rem; }
-.dev-url { font-size: 0.75rem; color: #64748b; margin-top: 0.5rem; }
-.dev-url a { color: #94a3b8; }
-.footer { text-align: center; margin-top: 1rem; font-size: 0.9rem; color: #94a3b8; }
-.footer a { color: #60a5fa; }
+.dev-url { font-size: 0.75rem; color: var(--input-placeholder); margin-top: 0.5rem; }
+.dev-url a { color: var(--text-muted); }
+.footer { text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted); }
+.footer a { color: var(--link); }
 </style>

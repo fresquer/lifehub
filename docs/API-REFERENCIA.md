@@ -153,8 +153,29 @@ Tablas: `areas`, `projects`. Modelos en `backend/app/models.py`. Todos los endpo
 | PATCH  | `/projects/{id}` | Actualizar proyecto                           |
 | DELETE | `/projects/{id}` | Eliminar proyecto                             |
 
-- **POST body:** `{ "area_id": int, "name": "string", "description": "string | null" }`
-- **PATCH body:** `{ "name": "string | null", "description": "string | null", "area_id": int | null }`
+- **POST body:** `{ "area_id": int, "name": "string", "description": "string | null", "icon": "string | null", "next_action": "string | null" }` — `icon` (emoji) y `next_action` (siguiente acción GTD) son opcionales.
+- **PATCH body:** `{ "name": "string | null", "description": "string | null", "area_id": int | null, "icon": "string | null", "next_action": "string | null" }` — enviar `next_action` vacío o null para borrar la siguiente acción.
+- **Respuesta proyecto:** incluye `id`, `area_id`, `icon`, `name`, `description`, `next_action`, `created_at`, `updated_at`.
+
+Modelo **Project**: además de los campos anteriores, el campo `next_action` (string, opcional, máx. 500 caracteres) es la "siguiente acción" al estilo GTD. No hay endpoints nuevos; se gestiona con GET/POST/PATCH de proyectos.
+
+### One-shot tasks (tareas sin proyecto)
+
+Tareas que no pertenecen a ningún proyecto ("one shots"). Requieren **Bearer JWT** y solo devuelven/modifican datos del usuario autenticado.
+
+| Método | Ruta                    | Descripción           |
+| ------ | ----------------------- | --------------------- |
+| GET    | `/one-shot-tasks`       | Listar one-shots      |
+| POST   | `/one-shot-tasks`      | Crear one-shot        |
+| GET    | `/one-shot-tasks/{id}` | Obtener one-shot      |
+| PATCH  | `/one-shot-tasks/{id}` | Actualizar (title, done) |
+| DELETE | `/one-shot-tasks/{id}` | Eliminar              |
+
+- **POST body:** `{ "title": "string" }`
+- **PATCH body:** `{ "title": "string | null", "done": "boolean | null" }`
+- **Respuesta:** `id`, `user_id`, `title`, `done`, `created_at`, `updated_at`.
+
+Tabla: `one_shot_tasks`. Modelo: `backend/app/models.py` (OneShotTask).
 
 ---
 
@@ -177,6 +198,7 @@ Tablas: `areas`, `projects`. Modelos en `backend/app/models.py`. Todos los endpo
 | Rutas register, login, me y dependencia get_current_user      | `backend/app/routers/auth.py`     |
 | CRUD de áreas (por usuario)                                   | `backend/app/routers/areas.py`    |
 | CRUD de proyectos (por área/usuario)                          | `backend/app/routers/projects.py` |
+| CRUD de one-shot tasks (tareas sin proyecto)                  | `backend/app/routers/one_shot_tasks.py` |
 
 Base de datos: PostgreSQL. URL por defecto: `postgresql://lifehub:lifehub_secret@.../lifehub` (ver `docker-compose.yml` y `DATABASE_URL`).
 

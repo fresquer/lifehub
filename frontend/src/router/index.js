@@ -8,6 +8,7 @@ import Usuario from '../views/Usuario.vue'
 import Configuracion from '../views/Configuracion.vue'
 import Areas from '../views/Areas.vue'
 import ConfiguracionAreas from '../views/ConfiguracionAreas.vue'
+import Tareas from '../views/Tareas.vue'
 
 const routes = [
   { path: '/', name: 'Home', component: Home },
@@ -19,6 +20,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: '', name: 'Dashboard', component: Areas, meta: { pageTitle: 'Áreas y proyectos' } },
+      { path: 'tareas', name: 'Tareas', component: Tareas, meta: { pageTitle: 'Tareas' } },
       { path: 'usuario', name: 'Usuario', component: Usuario, meta: { pageTitle: 'Mi perfil' } },
       { path: 'usuario/configuracion', name: 'Configuracion', component: Configuracion, meta: { pageTitle: 'Configuración' } },
       { path: 'configuracion-areas', name: 'ConfiguracionAreas', component: ConfiguracionAreas, meta: { pageTitle: 'Configuración áreas' } },

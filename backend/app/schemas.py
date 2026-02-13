@@ -66,6 +66,7 @@ class ProjectCreate(BaseModel):
     name: str
     icon: str | None = None
     description: str | None = None
+    next_action: str | None = None
 
 
 class ProjectUpdate(BaseModel):
@@ -73,6 +74,7 @@ class ProjectUpdate(BaseModel):
     icon: str | None = None
     description: str | None = None
     area_id: int | None = None
+    next_action: str | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -81,6 +83,30 @@ class ProjectResponse(BaseModel):
     icon: str | None
     name: str
     description: str | None
+    next_action: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# --- OneShotTask ---
+
+class OneShotTaskCreate(BaseModel):
+    title: str
+
+
+class OneShotTaskUpdate(BaseModel):
+    title: str | None = None
+    done: bool | None = None
+
+
+class OneShotTaskResponse(BaseModel):
+    id: int
+    user_id: int
+    title: str
+    done: bool
     created_at: datetime
     updated_at: datetime
 
