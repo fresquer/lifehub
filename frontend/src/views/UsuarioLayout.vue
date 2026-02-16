@@ -3,7 +3,10 @@
     <header class="topbar">
       <div class="topbar-left">
         <router-link to="/dashboard" class="brand">LifeHub</router-link>
-        <span class="page-title">{{ pageTitle }}</span>
+        <nav class="topbar-nav">
+          <router-link to="/dashboard" class="nav-link" exact-active-class="active">Áreas</router-link>
+          <router-link to="/dashboard/tareas" class="nav-link" exact-active-class="active">Tareas</router-link>
+        </nav>
       </div>
       <div class="topbar-right" ref="dropdownWrapRef">
         <button
@@ -13,7 +16,8 @@
           :title="theme === 'dark' ? 'Tema claro' : 'Tema oscuro'"
           @click="toggle()"
         >
-          <span class="theme-icon" aria-hidden="true">{{ theme === 'dark' ? '☀' : '🌙' }}</span>
+          <Sun v-if="theme === 'dark'" :size="20" class="theme-icon" aria-hidden="true" />
+          <Moon v-else :size="20" class="theme-icon" aria-hidden="true" />
         </button>
         <button
           type="button"
@@ -24,9 +28,7 @@
         >
           <span class="user-avatar">{{ userInitial }}</span>
           <span class="user-email">{{ user?.email || "…" }}</span>
-          <span class="dropdown-chevron" :class="{ open: dropdownOpen }"
-            >▾</span
-          >
+          <ChevronDown :size="16" class="dropdown-chevron" :class="{ open: dropdownOpen }" aria-hidden="true" />
         </button>
         <Transition name="dropdown">
           <div v-if="dropdownOpen" class="dropdown-menu" role="menu">
@@ -38,27 +40,11 @@
             </div>
             <div class="dropdown-divider" />
             <router-link
-              to="/dashboard"
-              class="dropdown-item"
-              @click="dropdownOpen = false"
-            >
-              <span class="dropdown-icon">📂</span>
-              Áreas y proyectos
-            </router-link>
-            <router-link
-              to="/dashboard/tareas"
-              class="dropdown-item"
-              @click="dropdownOpen = false"
-            >
-              <span class="dropdown-icon">✓</span>
-              Tareas
-            </router-link>
-            <router-link
               to="/dashboard/usuario"
               class="dropdown-item"
               @click="dropdownOpen = false"
             >
-              <span class="dropdown-icon">ℹ️</span>
+              <Info :size="18" class="dropdown-icon" />
               Info
             </router-link>
             <router-link
@@ -66,7 +52,7 @@
               class="dropdown-item"
               @click="dropdownOpen = false"
             >
-              <span class="dropdown-icon">⚙️</span>
+              <Settings :size="18" class="dropdown-icon" />
               Configuración
             </router-link>
             <router-link
@@ -74,12 +60,12 @@
               class="dropdown-item"
               @click="dropdownOpen = false"
             >
-              <span class="dropdown-icon">📋</span>
+              <ClipboardList :size="18" class="dropdown-icon" />
               Configuración áreas
             </router-link>
             <div class="dropdown-divider" />
             <button type="button" class="dropdown-item danger" @click="logout">
-              <span class="dropdown-icon">🚪</span>
+              <LogOut :size="18" class="dropdown-icon" />
               Cerrar sesión
             </button>
           </div>
@@ -94,18 +80,16 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter } from "vue-router";
+import { Sun, Moon, ChevronDown, Info, Settings, ClipboardList, LogOut } from "lucide-vue-next";
 import { useAuth } from "../composables/useAuth";
 import { useTheme } from "../composables/useTheme";
 
-const route = useRoute();
 const { theme, toggle } = useTheme();
 const router = useRouter();
 const { user, fetchUser, logout: doLogout } = useAuth();
 const dropdownOpen = ref(false);
 const dropdownWrapRef = ref(null);
-
-const pageTitle = computed(() => route.meta.pageTitle || "Áreas y proyectos");
 
 const userInitial = computed(() => {
   const u = user.value;
@@ -176,10 +160,31 @@ function logout() {
   color: var(--text-strong);
 }
 
-.page-title {
-  font-size: 0.95rem;
-  color: var(--text-muted);
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.nav-link {
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
   font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+  color: var(--text-strong);
+  background: var(--hover-bg);
+}
+
+.nav-link.active {
+  color: var(--text-strong);
+  background: var(--hover-bg);
 }
 
 .topbar-right {

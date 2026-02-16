@@ -43,6 +43,7 @@ SQL_TABLES = [
         name VARCHAR(255) NOT NULL,
         description VARCHAR(1000),
         next_action VARCHAR(500),
+        pinned BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMPTZ DEFAULT now(),
         updated_at TIMESTAMPTZ DEFAULT now()
     );
@@ -71,6 +72,7 @@ SQL_ALTERS = [
     "ALTER TABLE areas ADD COLUMN IF NOT EXISTS color VARCHAR(7) NULL;",
     "ALTER TABLE projects ADD COLUMN IF NOT EXISTS icon VARCHAR(20) NULL;",
     "ALTER TABLE projects ADD COLUMN IF NOT EXISTS next_action VARCHAR(500) NULL;",
+    "ALTER TABLE projects ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT false;",
 ]
 
 

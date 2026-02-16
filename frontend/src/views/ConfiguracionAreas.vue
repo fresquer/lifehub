@@ -149,15 +149,18 @@
                     <span v-if="area.description" class="area-desc">{{ area.description }}</span>
                   </div>
                   <div class="area-row-actions">
-                    <button type="button" class="btn-icon" title="Editar" @click="startEdit(area)">✎</button>
+                    <button type="button" class="btn-icon" title="Editar" @click="startEdit(area)" aria-label="Editar">
+                      <Pencil :size="18" aria-hidden="true" />
+                    </button>
                     <button
                       type="button"
                       class="btn-icon danger"
                       title="Eliminar"
                       :disabled="saving"
+                      aria-label="Eliminar"
                       @click="confirmDelete(area)"
                     >
-                      🗑
+                      <Trash2 :size="18" aria-hidden="true" />
                     </button>
                   </div>
                 </template>
@@ -199,6 +202,7 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
+import { Pencil, Trash2 } from 'lucide-vue-next'
 import { useAuth } from '../composables/useAuth'
 import { useApi } from '../composables/useApi'
 

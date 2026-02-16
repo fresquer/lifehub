@@ -23,7 +23,11 @@
                 class="task-row task-row-project"
               >
                 <span class="task-project-meta">
-                  <span class="task-project-icon">{{ project.icon || '📄' }}</span>
+                  <AppIcon
+                    :name="project.icon || 'FileText'"
+                    :size="20"
+                    class="task-project-icon"
+                  />
                   <span class="task-project-name">{{ project.name }}</span>
                 </span>
                 <span class="task-title">{{ project.next_action }}</span>
@@ -89,6 +93,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import AppIcon from '../components/AppIcon.vue'
 import { useAuth } from '../composables/useAuth'
 import { useApi } from '../composables/useApi'
 

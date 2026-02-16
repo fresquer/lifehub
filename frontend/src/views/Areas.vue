@@ -8,6 +8,66 @@
           <p>Aún no tienes áreas. Crea una para organizar tus proyectos.</p>
         </div>
         <div v-else class="areas-scroll">
+          <!-- Proyectos pineados: sección fija arriba -->
+          <section
+            v-if="pinnedProjects.length > 0"
+            class="area-section area-section-pinned"
+          >
+            <div class="area-header">
+              <h2 class="area-title"><Pin :size="20" class="area-title-icon" aria-hidden="true" /> Proyectos pineados</h2>
+            </div>
+            <div class="projects-row">
+              <div
+                v-for="project in pinnedProjects"
+                :key="project.id"
+                class="project-card"
+                role="button"
+                tabindex="0"
+                @click="
+                  editingProjectId === project.id ? null : openModal(project)
+                "
+                @keydown.enter.space.prevent="
+                  editingProjectId !== project.id && openModal(project)
+                "
+              >
+                <button
+                  type="button"
+                  class="project-card-pin"
+                  :class="{ 'project-card-pin--pinned': project.pinned }"
+                  :aria-label="project.pinned ? 'Despinear' : 'Pinear'"
+                  @click.stop="togglePin(project)"
+                >
+                  <Pin :size="14" aria-hidden="true" />
+                </button>
+                <template v-if="editingProjectId === project.id">
+                  <AppIcon
+                    :name="project.icon || DEFAULT_ICON"
+                    :size="28"
+                    class="project-card-icon"
+                  />
+                  <input
+                    ref="projectTitleInputRef"
+                    v-model="editingTitle"
+                    type="text"
+                    class="project-name-input"
+                    placeholder="Título del proyecto"
+                    @click.stop
+                    @keydown.space.stop
+                    @blur="saveProjectTitle(project)"
+                    @keydown.enter.stop="saveProjectTitle(project)"
+                  />
+                </template>
+                <template v-else>
+                  <AppIcon
+                    :name="project.icon || DEFAULT_ICON"
+                    :size="28"
+                    class="project-card-icon"
+                  />
+                  <h3 class="project-name">{{ project.name }}</h3>
+                </template>
+              </div>
+            </div>
+          </section>
           <section
             v-for="area in orderedAreas"
             :key="area.id"
@@ -44,10 +104,21 @@
                   editingProjectId !== project.id && openModal(project)
                 "
               >
+                <button
+                  type="button"
+                  class="project-card-pin"
+                  :class="{ 'project-card-pin--pinned': project.pinned }"
+                  :aria-label="project.pinned ? 'Despinear' : 'Pinear'"
+                  @click.stop="togglePin(project)"
+                >
+                  <Pin :size="14" aria-hidden="true" />
+                </button>
                 <template v-if="editingProjectId === project.id">
-                  <span class="project-card-icon">{{
-                    project.icon || DEFAULT_ICON
-                  }}</span>
+                  <AppIcon
+                    :name="project.icon || DEFAULT_ICON"
+                    :size="28"
+                    class="project-card-icon"
+                  />
                   <input
                     ref="projectTitleInputRef"
                     v-model="editingTitle"
@@ -61,19 +132,12 @@
                   />
                 </template>
                 <template v-else>
-                  <span class="project-card-icon">{{
-                    project.icon || DEFAULT_ICON
-                  }}</span>
+                  <AppIcon
+                    :name="project.icon || DEFAULT_ICON"
+                    :size="28"
+                    class="project-card-icon"
+                  />
                   <h3 class="project-name">{{ project.name }}</h3>
-                  <p
-                    v-if="project.next_action"
-                    class="project-next-action"
-                  >
-                    Siguiente: {{ project.next_action }}
-                  </p>
-                  <p v-else class="project-next-action empty">
-                    Sin siguiente acción
-                  </p>
                 </template>
               </div>
               <div v-if="!projectsByArea[area.id]?.length" class="no-projects">
@@ -101,30 +165,11 @@
           >
             <div class="modal-header">
               <div class="modal-title-row">
-                <div class="emoji-wrap" ref="emojiPickerWrapRef">
-                  <button
-                    type="button"
-                    class="emoji-trigger"
-                    aria-label="Cambiar icono"
-                    @click.stop="emojiPickerOpen = !emojiPickerOpen"
-                  >
-                    {{ modalIcon || DEFAULT_ICON }}
-                  </button>
-                  <Transition name="picker">
-                    <div
-                      v-if="emojiPickerOpen"
-                      class="emoji-picker-wrap"
-                      @click.stop
-                    >
-                      <EmojiPicker
-                        :native="true"
-                        theme="dark"
-                        :hide-search="false"
-                        :static-texts="{ placeholder: 'Buscar emoji…' }"
-                        @select="pickEmoji"
-                      />
-                    </div>
-                  </Transition>
+                <div class="modal-icon-display" aria-hidden="true">
+                  <AppIcon
+                    :name="modalIcon || DEFAULT_ICON"
+                    :size="28"
+                  />
                 </div>
                 <input
                   id="modal-title"
@@ -176,6 +221,19 @@
                 <span class="modal-label">Área:</span>
                 {{ areaNameFor(selectedProject) }}
               </p>
+              <div class="modal-pinned-row">
+                <button
+                  type="button"
+                  class="modal-pin-btn"
+                  :class="{ 'modal-pin-btn--pinned': modalPinned }"
+                  :aria-label="modalPinned ? 'Despinear' : 'Pinear'"
+                  :title="modalPinned ? 'Despinear (quitar de arriba)' : 'Pinear (mostrar arriba en Áreas)'"
+                  @click="modalPinned = !modalPinned"
+                >
+                  <Pin :size="18" aria-hidden="true" />
+                </button>
+                <span class="modal-pin-label">Proyecto pineado (aparece arriba en Áreas)</span>
+              </div>
             </div>
             <div class="modal-footer">
               <button
@@ -212,16 +270,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, computed, onMounted, nextTick } from "vue";
+import { Pin } from "lucide-vue-next";
+import AppIcon from "../components/AppIcon.vue";
+import {
+  DEFAULT_PROJECT_ICON,
+  PROJECT_ICON_NAMES,
+} from "../components/projectIcons.js";
 import { useAuth } from "../composables/useAuth";
 import { useApi } from "../composables/useApi";
-import EmojiPicker from "vue3-emoji-picker";
-import "vue3-emoji-picker/css";
 
 const { fetchUser } = useAuth();
 const { get, post, patch, delete: del } = useApi();
 
-const DEFAULT_ICON = "📄";
+const DEFAULT_ICON = DEFAULT_PROJECT_ICON;
 
 const loading = ref(true);
 const error = ref("");
@@ -236,9 +298,8 @@ const modalTitle = ref("");
 const modalDescription = ref("");
 const modalNextAction = ref("");
 const modalIcon = ref("");
+const modalPinned = ref(false);
 const modalSaving = ref(false);
-const emojiPickerOpen = ref(false);
-const emojiPickerWrapRef = ref(null);
 
 const AREA_ORDER_KEY = "lifehub_area_order";
 
@@ -280,6 +341,12 @@ const orderedAreas = computed(() => {
   return result;
 });
 
+const pinnedProjects = computed(() => {
+  return projects.value
+    .filter((p) => p.pinned)
+    .sort((a, b) => a.name.localeCompare(b.name));
+});
+
 const projectsByArea = computed(() => {
   const byId = {};
   for (const a of areas.value) byId[a.id] = [];
@@ -301,7 +368,7 @@ async function addProject(area) {
     const created = await post("projects", {
       area_id: area.id,
       name: "Nuevo proyecto",
-      icon: DEFAULT_ICON,
+      icon: DEFAULT_PROJECT_ICON,
     });
     projects.value = [...projects.value, created];
     editingProjectId.value = created.id;
@@ -323,13 +390,10 @@ function openModal(project) {
   modalTitle.value = project.name;
   modalDescription.value = project.description ?? "";
   modalNextAction.value = project.next_action ?? "";
-  modalIcon.value = project.icon ?? "";
-  emojiPickerOpen.value = false;
-}
-
-function pickEmoji(emoji) {
-  if (emoji?.i) modalIcon.value = emoji.i;
-  emojiPickerOpen.value = false;
+  const rawIcon = project.icon ?? "";
+  modalIcon.value =
+    PROJECT_ICON_NAMES.includes(rawIcon) ? rawIcon : DEFAULT_PROJECT_ICON;
+  modalPinned.value = !!project.pinned;
 }
 
 function closeModal() {
@@ -361,7 +425,8 @@ async function saveModalProject() {
   const name = (modalTitle.value || "").trim() || selectedProject.value.name;
   const description = (modalDescription.value || "").trim() || null;
   const next_action = (modalNextAction.value || "").trim() || null;
-  const icon = modalIcon.value || null;
+  const icon = (modalIcon.value || DEFAULT_PROJECT_ICON) || null;
+  const pinned = modalPinned.value;
   modalSaving.value = true;
   try {
     const updated = await patch(`projects/${selectedProject.value.id}`, {
@@ -369,6 +434,7 @@ async function saveModalProject() {
       description,
       icon,
       next_action,
+      pinned,
     });
     const i = projects.value.findIndex(
       (p) => p.id === selectedProject.value.id
@@ -398,6 +464,21 @@ async function deleteProject() {
     error.value = e.message || "Error al borrar";
   } finally {
     modalSaving.value = false;
+  }
+}
+
+async function togglePin(project) {
+  const nextPinned = !project.pinned;
+  try {
+    const updated = await patch(`projects/${project.id}`, { pinned: nextPinned });
+    const i = projects.value.findIndex((p) => p.id === project.id);
+    if (i !== -1) projects.value[i] = { ...projects.value[i], ...updated };
+    if (selectedProject.value?.id === project.id) {
+      selectedProject.value = { ...selectedProject.value, pinned: nextPinned };
+      modalPinned.value = nextPinned;
+    }
+  } catch (e) {
+    error.value = e.message || "Error al actualizar pineado";
   }
 }
 
@@ -432,24 +513,9 @@ async function loadData() {
   }
 }
 
-function closeEmojiPicker(e) {
-  if (
-    emojiPickerOpen.value &&
-    emojiPickerWrapRef.value &&
-    !emojiPickerWrapRef.value.contains(e.target)
-  ) {
-    emojiPickerOpen.value = false;
-  }
-}
-
 onMounted(async () => {
   await fetchUser();
   await loadData();
-  document.addEventListener("click", closeEmojiPicker);
-});
-
-onUnmounted(() => {
-  document.removeEventListener("click", closeEmojiPicker);
 });
 </script>
 
@@ -504,6 +570,17 @@ onUnmounted(() => {
   padding: 1.25rem;
 }
 
+.area-section-pinned {
+  --area-accent: var(--primary, #6366f1);
+  --pin-tint: color-mix(in srgb, var(--primary) 10%, transparent);
+  --pin-border: color-mix(in srgb, var(--primary) 35%, var(--card-border-subtle));
+  --pin-shadow: color-mix(in srgb, var(--primary) 18%, transparent);
+  background: linear-gradient(135deg, var(--pin-tint) 0%, var(--hover-bg) 100%);
+  border: 1px solid var(--pin-border);
+  border-left: 6px solid var(--area-accent);
+  box-shadow: 0 2px 12px var(--pin-shadow);
+}
+
 .area-header {
   margin-bottom: 1rem;
   display: flex;
@@ -546,6 +623,14 @@ onUnmounted(() => {
   font-weight: 600;
   color: var(--text-strong);
   margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.area-title-icon {
+  flex-shrink: 0;
+  color: var(--text-strong);
 }
 
 .area-desc {
@@ -575,6 +660,7 @@ onUnmounted(() => {
 }
 
 .project-card {
+  position: relative;
   min-height: 100px;
   padding: 1rem;
   display: flex;
@@ -585,6 +671,39 @@ onUnmounted(() => {
   border: 1px solid var(--card-border);
   border-radius: 0.75rem;
   transition: border-color 0.2s, background 0.2s;
+}
+
+.project-card-pin {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+  background: var(--card-bg, var(--hover-bg));
+  border: 1px solid var(--card-border);
+  border-radius: 0.35rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s, border-color 0.2s;
+}
+
+.project-card:hover .project-card-pin {
+  opacity: 1;
+}
+
+.project-card-pin:hover {
+  background: var(--hover-bg);
+  border-color: var(--hover-border);
+}
+
+.project-card-pin--pinned {
+  border-color: var(--primary);
+  background: var(--primary-bg, rgba(99, 102, 241, 0.15));
 }
 
 .project-card:hover {
@@ -634,22 +753,6 @@ onUnmounted(() => {
   margin: 0 0 0.35rem 0;
 }
 
-.project-next-action {
-  width: 100%;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin: 0.25rem 0 0;
-  line-height: 1.35;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.project-next-action.empty {
-  color: var(--input-placeholder);
-  font-style: italic;
-}
-
 .no-projects {
   grid-column: 1 / -1;
   padding: 1rem 1.5rem;
@@ -697,55 +800,14 @@ onUnmounted(() => {
   gap: 0.5rem;
 }
 
-.emoji-wrap {
-  position: relative;
+.modal-icon-display {
   flex-shrink: 0;
-}
-
-.emoji-trigger {
-  width: 40px;
-  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
-  line-height: 1;
-  background: var(--hover-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 0.5rem;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
-}
-
-.emoji-trigger:hover {
-  background: var(--hover-bg);
-  border-color: var(--hover-border);
-}
-
-.emoji-picker-wrap {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  z-index: 10;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  box-shadow: var(--shadow-modal);
-}
-
-.emoji-picker-wrap :deep(.VueEmojiPicker) {
-  border: 1px solid var(--card-border);
-  border-radius: 0.75rem;
-}
-
-.picker-enter-active,
-.picker-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
-}
-
-.picker-enter-from,
-.picker-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
+  width: 44px;
+  height: 44px;
+  color: var(--text);
 }
 
 .modal-title-input {
@@ -876,6 +938,46 @@ onUnmounted(() => {
 .modal-area .modal-label {
   display: inline;
   margin: 0;
+}
+
+.modal-pinned-row {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modal-pin-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  background: var(--hover-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.2s, background 0.2s, border-color 0.2s;
+}
+
+.modal-pin-btn:hover {
+  opacity: 1;
+  background: var(--hover-bg);
+  border-color: var(--hover-border);
+}
+
+.modal-pin-btn--pinned {
+  opacity: 1;
+  border-color: var(--primary);
+  background: var(--primary-bg, rgba(99, 102, 241, 0.15));
+}
+
+.modal-pin-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
 
 .modal-footer {

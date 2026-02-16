@@ -47,6 +47,7 @@ def create_project(
         name=data.name,
         description=data.description,
         next_action=data.next_action,
+        pinned=data.pinned,
     )
     db.add(project)
     db.commit()
@@ -105,6 +106,8 @@ def update_project(
         project.area_id = data.area_id
     if data.next_action is not None:
         project.next_action = data.next_action.strip() or None
+    if data.pinned is not None:
+        project.pinned = data.pinned
     db.commit()
     db.refresh(project)
     return project

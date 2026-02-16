@@ -67,6 +67,7 @@ class ProjectCreate(BaseModel):
     icon: str | None = None
     description: str | None = None
     next_action: str | None = None
+    pinned: bool = False
 
 
 class ProjectUpdate(BaseModel):
@@ -75,6 +76,7 @@ class ProjectUpdate(BaseModel):
     description: str | None = None
     area_id: int | None = None
     next_action: str | None = None
+    pinned: bool | None = None
 
 
 class ProjectResponse(BaseModel):
@@ -84,6 +86,7 @@ class ProjectResponse(BaseModel):
     name: str
     description: str | None
     next_action: str | None
+    pinned: bool
     created_at: datetime
     updated_at: datetime
 
