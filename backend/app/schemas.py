@@ -66,7 +66,6 @@ class ProjectCreate(BaseModel):
     name: str
     icon: str | None = None
     description: str | None = None
-    next_action: str | None = None
     pinned: bool = False
 
 
@@ -75,8 +74,28 @@ class ProjectUpdate(BaseModel):
     icon: str | None = None
     description: str | None = None
     area_id: int | None = None
-    next_action: str | None = None
     pinned: bool | None = None
+
+
+class ProjectNextActionCreate(BaseModel):
+    title: str
+
+
+class ProjectNextActionUpdate(BaseModel):
+    title: str | None = None
+    done: bool | None = None
+
+
+class ProjectNextActionResponse(BaseModel):
+    id: int
+    project_id: int
+    title: str
+    done: bool
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class ProjectResponse(BaseModel):
@@ -85,10 +104,10 @@ class ProjectResponse(BaseModel):
     icon: str | None
     name: str
     description: str | None
-    next_action: str | None
     pinned: bool
     created_at: datetime
     updated_at: datetime
+    next_actions: list["ProjectNextActionResponse"] = []
 
     class Config:
         from_attributes = True
@@ -98,16 +117,19 @@ class ProjectResponse(BaseModel):
 
 class OneShotTaskCreate(BaseModel):
     title: str
+    area_id: int | None = None  # null = One shot
 
 
 class OneShotTaskUpdate(BaseModel):
     title: str | None = None
     done: bool | None = None
+    area_id: int | None = None
 
 
 class OneShotTaskResponse(BaseModel):
     id: int
     user_id: int
+    area_id: int | None
     title: str
     done: bool
     created_at: datetime

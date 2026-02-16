@@ -4,85 +4,149 @@
       <p v-if="loading" class="status">Cargando tareas…</p>
       <p v-else-if="error" class="status error">{{ error }}</p>
       <template v-else>
-        <div v-if="hasNoTasks" class="empty">
-          <p>No hay tareas. Añade una siguiente acción en un proyecto o crea una one-shot abajo.</p>
-        </div>
-        <div v-else class="tareas-scroll">
-          <!-- Por área y proyecto (siguiente acción de cada proyecto) -->
-          <section
-            v-for="area in orderedAreas"
-            :key="area.id"
-            class="area-section"
-            :style="areaSectionStyle(area)"
-          >
-            <h2 class="area-title">{{ area.name }}</h2>
-            <div class="task-list">
-              <div
-                v-for="project in projectTasksInArea(area.id)"
-                :key="'p-' + project.id"
-                class="task-row task-row-project"
+        <!-- Creador de tareas arriba -->
+        <section class="creator-section">
+          <form class="add-task-form" @submit.prevent="addTask">
+            <input
+              v-model="newTaskTitle"
+              type="text"
+              class="input"
+              placeholder="Título de la tarea"
+            />
+            <select v-model="selectedAreaId" class="select-area" aria-label="Área">
+              <option :value="null">One shot</option>
+              <option
+                v-for="area in orderedAreas"
+                :key="area.id"
+                :value="area.id"
               >
-                <span class="task-project-meta">
-                  <AppIcon
-                    :name="project.icon || 'FileText'"
-                    :size="20"
-                    class="task-project-icon"
-                  />
-                  <span class="task-project-name">{{ project.name }}</span>
-                </span>
-                <span class="task-title">{{ project.next_action }}</span>
-                <button
-                  type="button"
-                  class="btn-completada"
-                  :disabled="completingProjectId === project.id"
-                  @click="markProjectNextActionComplete(project)"
-                >
-                  Completada
-                </button>
-              </div>
-              <p v-if="projectTasksInArea(area.id).length === 0" class="no-tasks">Sin tareas en esta área</p>
-            </div>
-          </section>
+                {{ area.name }}
+              </option>
+            </select>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              :disabled="savingTask || !newTaskTitle.trim()"
+            >
+              Añadir
+            </button>
+          </form>
+        </section>
 
-          <!-- One shots (sin proyecto) -->
-          <section class="area-section area-section-oneshots">
-            <h2 class="area-title">One shots</h2>
-            <p class="area-desc">Tareas sin proyecto</p>
-            <form class="add-oneshot-form" @submit.prevent="addOneShot">
+        <!-- Toggle vista lista / agrupado -->
+        <div class="view-toggle-row">
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: viewMode === 'list' }"
+            @click="viewMode = 'list'"
+          >
+            Lista
+          </button>
+          <button
+            type="button"
+            class="view-toggle-btn"
+            :class="{ active: viewMode === 'grouped' }"
+            @click="viewMode = 'grouped'"
+          >
+            Agrupado por área
+          </button>
+        </div>
+
+        <div v-if="hasNoTasks" class="empty">
+          <p>No hay tareas. Crea una arriba o añade siguientes acciones en un proyecto.</p>
+        </div>
+
+        <!-- Vista lista: una lista con área a la derecha -->
+        <div v-else-if="viewMode === 'list'" class="tareas-scroll">
+          <div class="task-list">
+            <div
+              v-for="item in flatTaskList"
+              :key="item.type + '-' + item.id"
+              class="task-row"
+              :class="{ done: item.done }"
+            >
               <input
-                v-model="newOneShotTitle"
-                type="text"
-                class="input"
-                placeholder="Nueva tarea one-shot…"
+                type="checkbox"
+                :checked="item.done"
+                class="task-checkbox"
+                @change="toggleTask(item)"
               />
-              <button type="submit" class="btn btn-primary" :disabled="savingOneShot || !newOneShotTitle.trim()">
-                Añadir
+              <span class="task-title">{{ item.title }}</span>
+              <span class="task-area-badge">{{ item.areaName }}</span>
+              <button
+                v-if="item.type === 'oneshot'"
+                type="button"
+                class="btn-delete"
+                aria-label="Eliminar"
+                @click="deleteOneShot(item.raw)"
+              >
+                ×
               </button>
-            </form>
+              <button
+                v-else
+                type="button"
+                class="btn-delete"
+                aria-label="Eliminar"
+                @click="deleteNextAction(item.raw)"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vista agrupada por área -->
+        <div v-else class="tareas-scroll">
+          <section
+            v-for="group in groupedTaskList"
+            :key="group.areaKey"
+            class="area-section"
+            :style="group.area ? areaSectionStyle(group.area) : areaSectionStyleOneshot()"
+          >
+            <h2 class="area-title">{{ group.areaName }}</h2>
             <div class="task-list">
               <div
-                v-for="task in oneShotTasks"
-                :key="'o-' + task.id"
-                class="task-row task-row-oneshot"
-                :class="{ done: task.done }"
+                v-for="item in group.items"
+                :key="item.type + '-' + item.id"
+                class="task-row"
+                :class="{ done: item.done }"
               >
                 <input
                   type="checkbox"
-                  :checked="task.done"
+                  :checked="item.done"
                   class="task-checkbox"
-                  @change="toggleOneShotDone(task)"
+                  @change="toggleTask(item)"
                 />
-                <span class="task-title">{{ task.title }}</span>
+                <span v-if="item.project" class="task-project-meta">
+                  <AppIcon
+                    :name="item.project.icon || 'FileText'"
+                    :size="20"
+                    class="task-project-icon"
+                  />
+                  <span class="task-project-name">{{ item.project.name }}</span>
+                </span>
+                <span class="task-title">{{ item.title }}</span>
                 <button
+                  v-if="item.type === 'oneshot'"
                   type="button"
                   class="btn-delete"
                   aria-label="Eliminar"
-                  @click="deleteOneShot(task)"
+                  @click="deleteOneShot(item.raw)"
+                >
+                  ×
+                </button>
+                <button
+                  v-else
+                  type="button"
+                  class="btn-delete"
+                  aria-label="Eliminar"
+                  @click="deleteNextAction(item.raw)"
                 >
                   ×
                 </button>
               </div>
-              <p v-if="oneShotTasks.length === 0" class="no-tasks">Aún no hay one-shots</p>
+              <p v-if="group.items.length === 0" class="no-tasks">Sin tareas en esta área</p>
             </div>
           </section>
         </div>
@@ -108,9 +172,10 @@ const error = ref('')
 const areas = ref([])
 const projects = ref([])
 const oneShotTasks = ref([])
-const newOneShotTitle = ref('')
-const savingOneShot = ref(false)
-const completingProjectId = ref(null)
+const newTaskTitle = ref('')
+const selectedAreaId = ref(null) // null = One shot
+const savingTask = ref(false)
+const viewMode = ref('grouped') // 'list' | 'grouped'
 
 function getStoredAreaOrder() {
   try {
@@ -137,19 +202,116 @@ const orderedAreas = computed(() => {
   return result
 })
 
+function areaNameById(areaId) {
+  if (areaId == null) return 'One shot'
+  const a = areas.value.find((x) => x.id === areaId)
+  return a ? a.name : 'One shot'
+}
+
 function areaSectionStyle(area) {
-  const color = area.color || DEFAULT_AREA_ACCENT
+  const color = area?.color || DEFAULT_AREA_ACCENT
   return { '--area-accent': color, borderLeftColor: color }
 }
 
-/** Proyectos de un área que tienen next_action (para mostrar como tarea). */
-function projectTasksInArea(areaId) {
-  return projects.value.filter((p) => p.area_id === areaId && p.next_action && p.next_action.trim())
+function areaSectionStyleOneshot() {
+  return { '--area-accent': 'var(--text-muted)', borderLeftColor: 'var(--text-muted)' }
 }
 
+/** Lista plana para vista lista: one-shots + next actions con areaName */
+const flatTaskList = computed(() => {
+  const list = []
+  for (const task of oneShotTasks.value) {
+    list.push({
+      type: 'oneshot',
+      id: task.id,
+      title: task.title,
+      done: task.done,
+      areaName: areaNameById(task.area_id),
+      raw: task,
+    })
+  }
+  for (const project of projects.value) {
+    const areaName = areaNameById(project.area_id)
+    for (const na of project.next_actions || []) {
+      list.push({
+        type: 'nextaction',
+        id: na.id,
+        title: na.title,
+        done: na.done,
+        areaName,
+        project,
+        raw: na,
+      })
+    }
+  }
+  return list.sort((a, b) => (a.done === b.done ? 0 : a.done ? 1 : -1))
+})
+
+/** Agrupado por área: One shot primero, luego áreas ordenadas; cada grupo con items */
+const groupedTaskList = computed(() => {
+  const groups = []
+  const areaIds = [...new Set(orderedAreas.value.map((a) => a.id))]
+  // One shot
+  const oneShotItems = oneShotTasks.value
+    .filter((t) => t.area_id == null)
+    .map((t) => ({
+      type: 'oneshot',
+      id: t.id,
+      title: t.title,
+      done: t.done,
+      raw: t,
+      project: null,
+    }))
+  groups.push({
+    areaKey: 'oneshot',
+    areaName: 'One shot',
+    area: null,
+    items: oneShotItems,
+  })
+  // Por área: one-shots de esa área + next actions de proyectos de esa área
+  for (const area of orderedAreas.value) {
+    const items = []
+    for (const t of oneShotTasks.value) {
+      if (t.area_id === area.id) {
+        items.push({
+          type: 'oneshot',
+          id: t.id,
+          title: t.title,
+          done: t.done,
+          raw: t,
+          project: null,
+        })
+      }
+    }
+    for (const p of projects.value) {
+      if (p.area_id !== area.id) continue
+      for (const na of p.next_actions || []) {
+        items.push({
+          type: 'nextaction',
+          id: na.id,
+          title: na.title,
+          done: na.done,
+          raw: na,
+          project: p,
+        })
+      }
+    }
+    groups.push({
+      areaKey: 'area-' + area.id,
+      areaName: area.name,
+      area,
+      items,
+    })
+  }
+  return groups
+})
+
 const hasNoTasks = computed(() => {
-  const hasProjectTasks = projects.value.some((p) => p.next_action && p.next_action.trim())
-  return !hasProjectTasks && oneShotTasks.value.length === 0
+  const hasOneShots = oneShotTasks.value.length > 0
+  const hasNextActions = projects.value.some(
+    (p) => Array.isArray(p.next_actions) && p.next_actions.length > 0
+  )
+  return !hasOneShots && !hasNextActions
 })
 
 async function loadData() {
@@ -171,32 +333,29 @@ async function loadData() {
   }
 }
 
-async function markProjectNextActionComplete(project) {
-  if (completingProjectId.value) return
-  completingProjectId.value = project.id
+async function addTask() {
+  const title = newTaskTitle.value.trim()
+  if (!title || savingTask.value) return
+  savingTask.value = true
   try {
-    const updated = await patch(`projects/${project.id}`, { next_action: '' })
-    const i = projects.value.findIndex((p) => p.id === project.id)
-    if (i !== -1) projects.value[i] = { ...projects.value[i], ...updated }
-  } catch (e) {
-    error.value = e.message || 'Error al guardar'
-  } finally {
-    completingProjectId.value = null
-  }
-}
-
-async function addOneShot() {
-  const title = newOneShotTitle.value.trim()
-  if (!title || savingOneShot.value) return
-  savingOneShot.value = true
-  try {
-    const created = await post('one-shot-tasks', { title })
+    const created = await post('one-shot-tasks', {
+      title,
+      area_id: selectedAreaId.value ?? null,
+    })
     oneShotTasks.value = [...oneShotTasks.value, created]
-    newOneShotTitle.value = ''
+    newTaskTitle.value = ''
   } catch (e) {
     error.value = e.message || 'Error al crear'
   } finally {
-    savingOneShot.value = false
+    savingTask.value = false
+  }
+}
+
+function toggleTask(item) {
+  if (item.type === 'oneshot') {
+    toggleOneShotDone(item.raw)
+  } else {
+    toggleNextActionDone(item.raw)
   }
 }
 
@@ -210,11 +369,37 @@ async function toggleOneShotDone(task) {
   }
 }
 
+async function toggleNextActionDone(na) {
+  try {
+    const updated = await patch(`project-next-actions/${na.id}`, { done: !na.done })
+    const proj = projects.value.find((p) => p.id === na.project_id)
+    if (proj?.next_actions) {
+      const j = proj.next_actions.findIndex((a) => a.id === na.id)
+      if (j !== -1) proj.next_actions[j] = { ...proj.next_actions[j], ...updated }
+    }
+  } catch (e) {
+    error.value = e.message || 'Error al actualizar'
+  }
+}
+
 async function deleteOneShot(task) {
   if (!confirm('¿Eliminar esta tarea?')) return
   try {
     await del(`one-shot-tasks/${task.id}`)
     oneShotTasks.value = oneShotTasks.value.filter((t) => t.id !== task.id)
+  } catch (e) {
+    error.value = e.message || 'Error al eliminar'
+  }
+}
+
+async function deleteNextAction(na) {
+  if (!confirm('¿Eliminar esta siguiente acción?')) return
+  try {
+    await del(`project-next-actions/${na.id}`)
+    const proj = projects.value.find((p) => p.id === na.project_id)
+    if (proj?.next_actions) {
+      proj.next_actions = proj.next_actions.filter((a) => a.id !== na.id)
+    }
   } catch (e) {
     error.value = e.message || 'Error al eliminar'
   }
@@ -263,6 +448,55 @@ onMounted(async () => {
   border: 1px dashed var(--card-border-subtle);
 }
 
+.creator-section {
+  margin-bottom: 1rem;
+}
+
+.add-task-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.add-task-form .input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.select-area {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 0.5rem;
+  outline: none;
+  min-width: 140px;
+}
+
+.view-toggle-row {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.view-toggle-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  background: var(--hover-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.view-toggle-btn.active {
+  background: var(--primary-bg, rgba(99, 102, 241, 0.15));
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
 .tareas-scroll {
   display: flex;
   flex-direction: column;
@@ -277,21 +511,11 @@ onMounted(async () => {
   padding: 1.25rem;
 }
 
-.area-section-oneshots {
-  border-left-color: var(--text-muted);
-}
-
 .area-title {
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-strong);
   margin: 0 0 0.5rem 0;
-}
-
-.area-desc {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin: 0 0 0.75rem 0;
 }
 
 .task-list {
@@ -310,7 +534,7 @@ onMounted(async () => {
   border: 1px solid var(--card-border-subtle);
 }
 
-.task-row-oneshot.done .task-title {
+.task-row.done .task-title {
   text-decoration: line-through;
   color: var(--text-muted);
 }
@@ -345,32 +569,17 @@ onMounted(async () => {
   text-overflow: ellipsis;
 }
 
+.task-area-badge {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 .task-checkbox {
   flex-shrink: 0;
   width: 1.1rem;
   height: 1.1rem;
   cursor: pointer;
-}
-
-.btn-completada {
-  flex-shrink: 0;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.85rem;
-  background: var(--success-bg);
-  color: var(--success);
-  border: 1px solid var(--success-border);
-  border-radius: 0.4rem;
-  cursor: pointer;
-}
-
-.btn-completada:hover:not(:disabled) {
-  filter: brightness(1.05);
-  opacity: 0.95;
-}
-
-.btn-completada:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .btn-delete {
@@ -394,15 +603,7 @@ onMounted(async () => {
   background: var(--danger-bg);
 }
 
-.add-oneshot-form {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
 .input {
-  flex: 1;
-  min-width: 0;
   padding: 0.5rem 0.75rem;
   font-size: 0.95rem;
   color: var(--text);

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import engine, SessionLocal
 from app.models import Base, User
-from app.routers import auth, areas, projects, one_shot_tasks
+from app.routers import auth, areas, projects, one_shot_tasks, project_next_actions
 from app.security import get_password_hash
 
 
@@ -49,6 +49,7 @@ app.include_router(auth.router)
 app.include_router(areas.router)
 app.include_router(projects.router)
 app.include_router(one_shot_tasks.router)
+app.include_router(project_next_actions.router)
 
 
 @app.get("/")

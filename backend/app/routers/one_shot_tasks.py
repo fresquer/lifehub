@@ -2,9 +2,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import User, OneShotTask
+from app.models import User, OneShotTask, Area
 from app.schemas import OneShotTaskCreate, OneShotTaskUpdate, OneShotTaskResponse
 from app.routers.auth import get_current_user
+
+
+def _ensure_area_belongs_to_user(db: Session, area_id: int, user_id: int) -> None:
+    """Lanza 404 si el área no existe o no pertenece al usuario."""
+    area = db.query(Area).filter(Area.id == area_id, Area.user_id == user_id).first()
+    if not area:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Área no encontrada",
+        )
 
 router = APIRouter(prefix="/one-shot-tasks", tags=["one-shot-tasks"])
 
@@ -29,10 +39,14 @@ def create_one_shot_task(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Crea una tarea one-shot (sin proyecto)."""
+    """Crea una tarea one-shot. area_id null = One shot."""
+    if data.area_id is not None:
+        _ensure_area_belongs_to_user(db, data.area_id, current_user.id)
     task = OneShotTask(
         user_id=current_user.id,
         title=data.title.strip(),
+        area_id=data.area_id,
+        done=False,
     )
     db.add(task)
     db.commit()
@@ -82,6 +96,9 @@ def update_one_shot_task(
         task.title = data.title.strip()
     if data.done is not None:
         task.done = data.done
+    if data.area_id is not None:
+        _ensure_area_belongs_to_user(db, data.area_id, current_user.id)
+        task.area_id = data.area_id
     db.commit()
     db.refresh(task)
     return task

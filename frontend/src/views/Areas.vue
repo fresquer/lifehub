@@ -190,23 +190,47 @@
               </button>
             </div>
             <div class="modal-body">
-              <div class="modal-next-action-block">
-                <label class="modal-label">Siguiente acción</label>
-                <div class="modal-next-action-row">
+              <div class="modal-next-actions-block">
+                <label class="modal-label">Siguientes acciones</label>
+                <div class="modal-next-actions-list">
+                  <div
+                    v-for="na in (selectedProject?.next_actions || [])"
+                    :key="na.id"
+                    class="modal-next-action-row"
+                    :class="{ done: na.done }"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="na.done"
+                      class="modal-next-action-checkbox"
+                      @change="toggleModalNextAction(na)"
+                    />
+                    <span class="modal-next-action-title">{{ na.title }}</span>
+                    <button
+                      type="button"
+                      class="modal-next-action-delete"
+                      aria-label="Eliminar"
+                      @click="deleteModalNextAction(na)"
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                <div class="modal-next-action-add">
                   <input
-                    v-model="modalNextAction"
+                    v-model="newNextActionTitle"
                     type="text"
                     class="modal-next-action-input"
-                    placeholder="¿Cuál es la siguiente acción?"
+                    placeholder="Añadir siguiente acción…"
+                    @keydown.enter.prevent="addModalNextAction"
                   />
                   <button
-                    v-if="modalNextAction.trim()"
                     type="button"
-                    class="modal-btn modal-btn-completada"
-                    :disabled="modalSaving"
-                    @click="markNextActionComplete"
+                    class="modal-btn modal-btn-add"
+                    :disabled="modalSaving || !newNextActionTitle.trim()"
+                    @click="addModalNextAction"
                   >
-                    Completada
+                    Añadir
                   </button>
                 </div>
               </div>
@@ -296,7 +320,7 @@ const selectedProject = ref(null);
 const projectTitleInputRef = ref(null);
 const modalTitle = ref("");
 const modalDescription = ref("");
-const modalNextAction = ref("");
+const newNextActionTitle = ref("");
 const modalIcon = ref("");
 const modalPinned = ref(false);
 const modalSaving = ref(false);
@@ -389,7 +413,7 @@ function openModal(project) {
   selectedProject.value = project;
   modalTitle.value = project.name;
   modalDescription.value = project.description ?? "";
-  modalNextAction.value = project.next_action ?? "";
+  newNextActionTitle.value = "";
   const rawIcon = project.icon ?? "";
   modalIcon.value =
     PROJECT_ICON_NAMES.includes(rawIcon) ? rawIcon : DEFAULT_PROJECT_ICON;
@@ -400,23 +424,61 @@ function closeModal() {
   selectedProject.value = null;
 }
 
-async function markNextActionComplete() {
-  if (!selectedProject.value || modalSaving.value) return;
+async function addModalNextAction() {
+  if (!selectedProject.value || modalSaving.value || !newNextActionTitle.value.trim()) return;
   modalSaving.value = true;
   try {
-    const updated = await patch(`projects/${selectedProject.value.id}`, {
-      next_action: "",
+    const created = await post(`projects/${selectedProject.value.id}/next-actions`, {
+      title: newNextActionTitle.value.trim(),
     });
-    const i = projects.value.findIndex(
-      (p) => p.id === selectedProject.value.id
-    );
-    if (i !== -1) projects.value[i] = { ...projects.value[i], ...updated };
-    selectedProject.value = { ...selectedProject.value, ...updated };
-    modalNextAction.value = "";
+    if (!selectedProject.value.next_actions) selectedProject.value.next_actions = [];
+    selectedProject.value.next_actions = [...selectedProject.value.next_actions, created];
+    const i = projects.value.findIndex((p) => p.id === selectedProject.value.id);
+    if (i !== -1) {
+      const nextActions = projects.value[i].next_actions || [];
+      projects.value[i] = { ...projects.value[i], next_actions: [...nextActions, created] };
+    }
+    newNextActionTitle.value = "";
   } catch (e) {
-    error.value = e.message || "Error al guardar";
+    error.value = e.message || "Error al crear";
   } finally {
     modalSaving.value = false;
+  }
+}
+
+async function toggleModalNextAction(na) {
+  try {
+    const updated = await patch(`project-next-actions/${na.id}`, { done: !na.done });
+    const list = selectedProject.value?.next_actions;
+    if (list) {
+      const j = list.findIndex((a) => a.id === na.id);
+      if (j !== -1) list[j] = { ...list[j], ...updated };
+    }
+    const proj = projects.value.find((p) => p.id === na.project_id);
+    if (proj?.next_actions) {
+      const k = proj.next_actions.findIndex((a) => a.id === na.id);
+      if (k !== -1) proj.next_actions[k] = { ...proj.next_actions[k], ...updated };
+    }
+  } catch (e) {
+    error.value = e.message || "Error al actualizar";
+  }
+}
+
+async function deleteModalNextAction(na) {
+  if (!confirm("¿Eliminar esta siguiente acción?")) return;
+  try {
+    await del(`project-next-actions/${na.id}`);
+    if (selectedProject.value?.next_actions) {
+      selectedProject.value.next_actions = selectedProject.value.next_actions.filter(
+        (a) => a.id !== na.id
+      );
+    }
+    const proj = projects.value.find((p) => p.id === na.project_id);
+    if (proj?.next_actions) {
+      proj.next_actions = proj.next_actions.filter((a) => a.id !== na.id);
+    }
+  } catch (e) {
+    error.value = e.message || "Error al eliminar";
   }
 }
 
@@ -424,7 +486,6 @@ async function saveModalProject() {
   if (!selectedProject.value || modalSaving.value) return;
   const name = (modalTitle.value || "").trim() || selectedProject.value.name;
   const description = (modalDescription.value || "").trim() || null;
-  const next_action = (modalNextAction.value || "").trim() || null;
   const icon = (modalIcon.value || DEFAULT_PROJECT_ICON) || null;
   const pinned = modalPinned.value;
   modalSaving.value = true;
@@ -433,7 +494,6 @@ async function saveModalProject() {
       name,
       description,
       icon,
-      next_action,
       pinned,
     });
     const i = projects.value.findIndex(
@@ -857,11 +917,70 @@ onMounted(async () => {
   padding: 0.5rem 1.25rem 1rem;
 }
 
-.modal-next-action-block {
+.modal-next-actions-block {
   margin-bottom: 1rem;
 }
 
+.modal-next-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
 .modal-next-action-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.4rem 0.5rem;
+  background: var(--input-bg);
+  border-radius: 0.5rem;
+  border: 1px solid var(--card-border-subtle);
+}
+
+.modal-next-action-row.done .modal-next-action-title {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.modal-next-action-checkbox {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  cursor: pointer;
+}
+
+.modal-next-action-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 1rem;
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-next-action-delete {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.modal-next-action-delete:hover {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.modal-next-action-add {
   display: flex;
   gap: 0.5rem;
   align-items: center;
@@ -887,15 +1006,16 @@ onMounted(async () => {
   color: var(--input-placeholder);
 }
 
-.modal-btn-completada {
+.modal-btn-add {
   flex-shrink: 0;
-  background: var(--success-bg);
-  color: var(--success);
-  border: 1px solid var(--success-border);
+  background: var(--hover-bg);
+  color: var(--text);
+  border: 1px solid var(--card-border);
 }
 
-.modal-btn-completada:hover:not(:disabled) {
-  background: var(--success-bg);
+.modal-btn-add:hover:not(:disabled) {
+  background: var(--hover-bg);
+  border-color: var(--hover-border);
 }
 
 .modal-label {
